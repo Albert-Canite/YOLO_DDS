@@ -16,11 +16,12 @@ A lightweight PyTorch implementation of a YOLO-tiny style detector for the Denta
 - `utils/metrics.py`: mAP and IoU computation utilities.
 
 ## Dataset setup
-1. 下载官方 Dental OPG XRAY Dataset 后，解压到仓库根目录，保持主目录名为 `./Dental_OPG_XRAY_Dataset`。
+1. 下载官方 Dental OPG XRAY Dataset 后，解压到仓库根目录，主目录可以是 `./Dental_OPG_XRAY_Dataset` **或** `./Dental OPG XRAY Dataset`（包含空格）；代码会自动识别两种名称。
 2. 数据包通常包含 `Augmented_Data`（含 `train/valid/test` 三个子目录）和 `Original_Data`。默认代码使用 `Augmented_Data`，预期结构：
    - `Dental_OPG_XRAY_Dataset/Augmented_Data/train/{images,labels}`
    - `Dental_OPG_XRAY_Dataset/Augmented_Data/valid/{images,labels}`
    - `Dental_OPG_XRAY_Dataset/Augmented_Data/test/{images,labels}`
+   - 每个 split 下的 `labels/` 目录应包含与图片同名的 `.txt` 文件（YOLO 标注格式），如 `train/labels/xxx.txt` 对应 `train/images/xxx.jpg`。
    - 如果提供 `splits/train.txt|valid.txt|test.txt`（位于 `Augmented_Data/splits`），也会自动读取；否则直接按各 split 下的 `.txt` 标签文件推断列表。
    若要切换到原始数据，可将 `config.DATASET_VARIANT` 改为 `config.ORIGINAL_ROOT`，并保证结构类似。
 3. 如果标注类别与默认不同，请在 `config.CLASS_NAMES` 中修改类别名称。

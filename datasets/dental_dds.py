@@ -57,6 +57,14 @@ class DentalDDS(torch.utils.data.Dataset):
         self.label_dir = config.LABELS_DIRS[self.split]
         self.idx_to_class = {idx: name for idx, name in enumerate(config.CLASS_NAMES)}
         self.class_to_idx = {name: idx for idx, name in self.idx_to_class.items()}
+        if not self.image_dir.exists() or not self.label_dir.exists():
+            raise FileNotFoundError(
+                "DDS data folders not found. Expected directories such as "
+                f"'{self.image_dir}' and '{self.label_dir}'. Please ensure the dataset folder is named "
+                "either 'Dental_OPG_XRAY_Dataset' or 'Dental OPG XRAY Dataset' and contains Augmented_Data/train|valid|test/"
+                "with images/ and labels/."
+            )
+
         split_file = {
             "train": config.TRAIN_SPLIT_FILE,
             "valid": config.VAL_SPLIT_FILE,
@@ -69,7 +77,9 @@ class DentalDDS(torch.utils.data.Dataset):
             txt_files = sorted(self.label_dir.glob("*.txt"))
             if not txt_files:
                 raise FileNotFoundError(
-                    f"No split file at {split_file} and no label txt files found in {self.label_dir}."
+                    "No split file found and no label txt files detected. "
+                    f"Checked for .txt files under: {self.label_dir}. "
+                    "Ensure label files reside in Augmented_Data/<split>/labels and are named like '<image_id>.txt'."
                 )
             self.ids = [p.stem for p in txt_files]
         self.input_size = config.INPUT_SIZE

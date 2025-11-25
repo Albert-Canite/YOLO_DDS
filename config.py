@@ -5,7 +5,18 @@ from pathlib import Path
 
 # Paths
 REPO_ROOT = Path(__file__).parent
-DATA_ROOT = REPO_ROOT / "Dental_OPG_XRAY_Dataset"
+
+# Accept both underscored and space-separated dataset folder names for flexibility
+PREFERRED_DATA_DIRS = [
+    REPO_ROOT / "Dental_OPG_XRAY_Dataset",
+    REPO_ROOT / "Dental OPG XRAY Dataset",
+]
+for candidate in PREFERRED_DATA_DIRS:
+    if candidate.exists():
+        DATA_ROOT = candidate
+        break
+else:
+    DATA_ROOT = PREFERRED_DATA_DIRS[0]
 
 # DDS release contains both augmented and original data. Default to augmented structure:
 # Dental_OPG_XRAY_Dataset/
