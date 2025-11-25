@@ -16,12 +16,14 @@ A lightweight PyTorch implementation of a YOLO-tiny style detector for the Denta
 - `utils/metrics.py`: mAP and IoU computation utilities.
 
 ## Dataset setup
-1. Download the official Dental OPG XRAY Dataset from the authors.
-2. Place it under the repository root as `./Dental_OPG_XRAY_Dataset` with the same folder names as provided by the authors. Expected folders:
-   - `images/{train,val,test}` containing `.jpg` or `.png` files.
-   - `annotations/{train,val,test}` containing Pascal VOC-style `.xml` annotations.
-   - `splits/train.txt`, `splits/val.txt`, `splits/test.txt` listing image basenames (without extensions) per split.
-3. Update `config.CLASS_NAMES` if your downloaded annotations contain different class labels.
+1. 下载官方 Dental OPG XRAY Dataset 后，解压到仓库根目录，保持主目录名为 `./Dental_OPG_XRAY_Dataset`。
+2. 数据包通常包含 `Augmented_Data`（含 `train/valid/test` 三个子目录）和 `Original_Data`。默认代码使用 `Augmented_Data`，预期结构：
+   - `Dental_OPG_XRAY_Dataset/Augmented_Data/train/{images,labels}`
+   - `Dental_OPG_XRAY_Dataset/Augmented_Data/valid/{images,labels}`
+   - `Dental_OPG_XRAY_Dataset/Augmented_Data/test/{images,labels}`
+   - 如果提供 `splits/train.txt|valid.txt|test.txt`（位于 `Augmented_Data/splits`），也会自动读取；否则直接按各 split 下的 `.txt` 标签文件推断列表。
+   若要切换到原始数据，可将 `config.DATASET_VARIANT` 改为 `config.ORIGINAL_ROOT`，并保证结构类似。
+3. 如果标注类别与默认不同，请在 `config.CLASS_NAMES` 中修改类别名称。
 
 ## Installation
 ```bash

@@ -6,9 +6,34 @@ from pathlib import Path
 # Paths
 REPO_ROOT = Path(__file__).parent
 DATA_ROOT = REPO_ROOT / "Dental_OPG_XRAY_Dataset"
-IMAGES_DIR = DATA_ROOT / "images"
-ANNOTATIONS_DIR = DATA_ROOT / "annotations"
-SPLITS_DIR = DATA_ROOT / "splits"
+
+# DDS release contains both augmented and original data. Default to augmented structure:
+# Dental_OPG_XRAY_Dataset/
+#   Augmented_Data/
+#     train/{images,labels}
+#     valid/{images,labels}
+#     test/{images,labels}
+AUGMENTED_ROOT = DATA_ROOT / "Augmented_Data"
+ORIGINAL_ROOT = DATA_ROOT / "Original_Data"
+DATASET_VARIANT = AUGMENTED_ROOT  # switch to ORIGINAL_ROOT if needed
+
+IMAGES_SUBDIR = "images"
+LABELS_SUBDIR = "labels"
+
+SPLITS = ["train", "valid", "test"]
+
+IMAGES_DIRS = {
+    split: DATASET_VARIANT / split / IMAGES_SUBDIR for split in SPLITS
+}
+LABELS_DIRS = {
+    split: DATASET_VARIANT / split / LABELS_SUBDIR for split in SPLITS
+}
+
+# Optional split files (if present). If absent, dataset loader will infer IDs from labels.
+SPLITS_DIR = DATASET_VARIANT / "splits"
+TRAIN_SPLIT_FILE = SPLITS_DIR / "train.txt"
+VAL_SPLIT_FILE = SPLITS_DIR / "valid.txt"
+TEST_SPLIT_FILE = SPLITS_DIR / "test.txt"
 
 # Hyperparameters
 INPUT_SIZE = 640
@@ -44,11 +69,6 @@ DEVICE = "cuda"
 CONF_THRESHOLD = 0.25
 NMS_IOU_THRESHOLD = 0.5
 MAX_DETECTIONS = 100
-
-# Splits expected to exist in SPLITS_DIR with filenames train.txt, val.txt, test.txt
-TRAIN_SPLIT_FILE = SPLITS_DIR / "train.txt"
-VAL_SPLIT_FILE = SPLITS_DIR / "val.txt"
-TEST_SPLIT_FILE = SPLITS_DIR / "test.txt"
 
 # Random seeds
 SEED = 42

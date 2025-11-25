@@ -22,7 +22,7 @@ def set_seed(seed: int):
 
 def create_dataloaders():
     train_dataset = DentalDDS(split="train", augment=True)
-    val_dataset = DentalDDS(split="val", augment=False)
+    val_dataset = DentalDDS(split="valid", augment=False)
     train_loader = DataLoader(
         train_dataset,
         batch_size=config.BATCH_SIZE,

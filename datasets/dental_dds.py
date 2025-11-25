@@ -1,6 +1,5 @@
 import json
 import math
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Dict, Any
@@ -10,7 +9,7 @@ from PIL import Image
 from torchvision import transforms
 
 import config
-from utils.boxes import xyxy_to_cxcywh, cxcywh_to_xyxy
+from utils.boxes import cxcywh_to_xyxy
 
 
 @dataclass
@@ -19,36 +18,26 @@ class Annotation:
     labels: torch.Tensor  # (N,)
 
 
-def parse_voc_annotation(xml_path: Path, class_to_idx: Dict[str, int]) -> Annotation:
-    tree = ET.parse(xml_path)
-    root = tree.getroot()
+def parse_yolo_annotation(txt_path: Path) -> Annotation:
     boxes = []
     labels = []
-    size = root.find("size")
-    if size is None:
-        raise ValueError(f"Annotation {xml_path} missing size tag")
-    img_w = float(size.find("width").text)
-    img_h = float(size.find("height").text)
-    for obj in root.iter("object"):
-        name = obj.find("name").text
-        if name not in class_to_idx:
-            continue
-        bbox = obj.find("bndbox")
-        xmin = float(bbox.find("xmin").text)
-        ymin = float(bbox.find("ymin").text)
-        xmax = float(bbox.find("xmax").text)
-        ymax = float(bbox.find("ymax").text)
-        cx, cy, w, h = xyxy_to_cxcywh(torch.tensor([[xmin, ymin, xmax, ymax]], dtype=torch.float32))[0].tolist()
-        boxes.append([cx / img_w, cy / img_h, w / img_w, h / img_h])
-        labels.append(class_to_idx[name])
+    with open(txt_path, "r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split()
+            if len(parts) != 5:
+                continue
+            cls_id, cx, cy, w, h = parts
+            cls_idx = int(cls_id)
+            if cls_idx < 0 or cls_idx >= config.NUM_CLASSES:
+                continue
+            labels.append(cls_idx)
+            boxes.append([float(cx), float(cy), float(w), float(h)])
     if not boxes:
         return Annotation(boxes=torch.zeros((0, 4), dtype=torch.float32), labels=torch.zeros((0,), dtype=torch.int64))
     return Annotation(boxes=torch.tensor(boxes, dtype=torch.float32), labels=torch.tensor(labels, dtype=torch.int64))
 
 
 def load_split(split_file: Path) -> List[str]:
-    if not split_file.exists():
-        raise FileNotFoundError(f"Split file {split_file} not found. Ensure DDS splits are present.")
     with open(split_file, "r", encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip()]
 
@@ -61,18 +50,28 @@ def build_class_mapping() -> Dict[str, int]:
 class DentalDDS(torch.utils.data.Dataset):
     def __init__(self, split: str = "train", augment: bool = True):
         super().__init__()
-        assert split in {"train", "val", "test"}
-        self.split = split
-        self.image_dir = config.IMAGES_DIR / split
-        self.ann_dir = config.ANNOTATIONS_DIR / split
-        self.class_to_idx = build_class_mapping()
-        self.idx_to_class = {v: k for k, v in self.class_to_idx.items()}
+        split_alias = "valid" if split == "val" else split
+        assert split_alias in {"train", "valid", "test"}
+        self.split = split_alias
+        self.image_dir = config.IMAGES_DIRS[self.split]
+        self.label_dir = config.LABELS_DIRS[self.split]
+        self.idx_to_class = {idx: name for idx, name in enumerate(config.CLASS_NAMES)}
+        self.class_to_idx = {name: idx for idx, name in self.idx_to_class.items()}
         split_file = {
             "train": config.TRAIN_SPLIT_FILE,
-            "val": config.VAL_SPLIT_FILE,
+            "valid": config.VAL_SPLIT_FILE,
             "test": config.TEST_SPLIT_FILE,
-        }[split]
-        self.ids = load_split(split_file)
+        }[self.split]
+        if split_file.exists():
+            self.ids = load_split(split_file)
+        else:
+            # Fallback: derive IDs from label filenames within the split directory
+            txt_files = sorted(self.label_dir.glob("*.txt"))
+            if not txt_files:
+                raise FileNotFoundError(
+                    f"No split file at {split_file} and no label txt files found in {self.label_dir}."
+                )
+            self.ids = [p.stem for p in txt_files]
         self.input_size = config.INPUT_SIZE
         self.augment = augment
         self.to_tensor = transforms.Compose(
@@ -95,10 +94,10 @@ class DentalDDS(torch.utils.data.Dataset):
         return Image.open(img_path).convert("RGB")
 
     def _load_annotation(self, image_id: str) -> Annotation:
-        xml_path = self.ann_dir / f"{image_id}.xml"
-        if not xml_path.exists():
-            raise FileNotFoundError(f"Annotation {xml_path} not found")
-        return parse_voc_annotation(xml_path, self.class_to_idx)
+        txt_path = self.label_dir / f"{image_id}.txt"
+        if not txt_path.exists():
+            raise FileNotFoundError(f"Annotation {txt_path} not found")
+        return parse_yolo_annotation(txt_path)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, Dict[str, Any]]:
         image_id = self.ids[idx]

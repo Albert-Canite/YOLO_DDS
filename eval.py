@@ -45,7 +45,7 @@ def evaluate(split: str, checkpoint: Path):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--split", type=str, default="test", choices=["val", "test"], help="Dataset split to evaluate")
+    parser.add_argument("--split", type=str, default="test", choices=["valid", "test"], help="Dataset split to evaluate")
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to model checkpoint")
     args = parser.parse_args()
     evaluate(args.split, Path(args.checkpoint))
