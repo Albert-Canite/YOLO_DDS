@@ -37,13 +37,23 @@ def draw_boxes(img: Image.Image, boxes: torch.Tensor, labels: torch.Tensor, scor
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", type=str, required=True, help="Path to checkpoint")
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Path to checkpoint (defaults to checkpoints/best.pt if present)",
+    )
     parser.add_argument("--output", type=str, default="inference_outputs", help="Directory to save visualizations")
     parser.add_argument("--num", type=int, default=5, help="Number of test images to visualize")
     args = parser.parse_args()
 
     device = torch.device(config.DEVICE if torch.cuda.is_available() else "cpu")
-    model = load_model(Path(args.checkpoint), device)
+    checkpoint_path = Path(args.checkpoint) if args.checkpoint else config.CHECKPOINT_DIR / "best.pt"
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(
+            f"Checkpoint not found. Specify --checkpoint or place a model at {checkpoint_path}"
+        )
+    model = load_model(checkpoint_path, device)
 
     dataset = DentalDDS(split="test", augment=False)
     output_dir = Path(args.output)
