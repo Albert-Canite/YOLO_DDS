@@ -68,8 +68,11 @@ class YOLOTiny(nn.Module):
             scores_sel = scores[mask]
             labels_sel = labels[mask]
             keep = nms(boxes_sel, scores_sel, config.NMS_IOU_THRESHOLD)
-            boxes_sel = boxes_sel[keep]
-            scores_sel = scores_sel[keep]
-            labels_sel = labels_sel[keep]
+            keep_sorted = keep[scores_sel[keep].argsort(descending=True)]
+            if keep_sorted.numel() > config.MAX_DETECTIONS:
+                keep_sorted = keep_sorted[: config.MAX_DETECTIONS]
+            boxes_sel = boxes_sel[keep_sorted]
+            scores_sel = scores_sel[keep_sorted]
+            labels_sel = labels_sel[keep_sorted]
             outputs.append(torch.cat([boxes_sel, scores_sel.unsqueeze(1), labels_sel.unsqueeze(1).float()], dim=1))
         return outputs
