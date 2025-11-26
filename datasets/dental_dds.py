@@ -29,7 +29,10 @@ def parse_yolo_annotation(txt_path: Path) -> Annotation:
             cls_id, cx, cy, w, h = parts
             cls_idx = int(cls_id)
             if cls_idx < 0 or cls_idx >= config.NUM_CLASSES:
-                continue
+                raise ValueError(
+                    f"Annotation class id {cls_idx} in '{txt_path}' exceeds configured NUM_CLASSES={config.NUM_CLASSES}. "
+                    "Update config.NUM_CLASSES/CLASS_NAMES to match the dataset."
+                )
             labels.append(cls_idx)
             boxes.append([float(cx), float(cy), float(w), float(h)])
     if not boxes:

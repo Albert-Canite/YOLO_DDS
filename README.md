@@ -24,7 +24,8 @@ A lightweight PyTorch implementation of a YOLO-tiny style detector for the Denta
    - 每个 split 下的 `labels/` 目录应包含与图片同名的 `.txt` 文件（YOLO 标注格式），如 `train/labels/xxx.txt` 对应 `train/images/xxx.jpg`。
    - 如果提供 `splits/train.txt|valid.txt|test.txt`（位于 `Augmented_Data/splits`），也会自动读取；否则直接按各 split 下的 `.txt` 标签文件推断列表。
    若要切换到原始数据，可将 `config.DATASET_VARIANT` 改为 `config.ORIGINAL_ROOT`，并保证结构类似。
-3. 如果标注类别与默认不同，请在 `config.CLASS_NAMES` 中修改类别名称。
+3. 默认配置假设 DDS 标注包含 6 个类别（id 0–5）。请根据真实标签调整
+   `config.NUM_CLASSES` 和 `config.CLASS_NAMES`，长度不匹配会导致加载错误。
 
 ## Installation
 ```bash
