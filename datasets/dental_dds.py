@@ -7,7 +7,6 @@ from typing import List, Tuple, Dict, Any
 import torch
 from PIL import Image
 from torchvision import transforms
-from torchvision.transforms import functional as TF
 
 import config
 from utils.boxes import cxcywh_to_xyxy
@@ -30,7 +29,10 @@ def parse_yolo_annotation(txt_path: Path) -> Annotation:
             cls_id, cx, cy, w, h = parts
             cls_idx = int(cls_id)
             if cls_idx < 0 or cls_idx >= config.NUM_CLASSES:
-                continue
+                raise ValueError(
+                    f"Annotation class id {cls_idx} in '{txt_path}' exceeds configured NUM_CLASSES={config.NUM_CLASSES}. "
+                    "Update config.NUM_CLASSES/CLASS_NAMES to match the dataset."
+                )
             labels.append(cls_idx)
             boxes.append([float(cx), float(cy), float(w), float(h)])
     if not boxes:
@@ -85,6 +87,12 @@ class DentalDDS(torch.utils.data.Dataset):
             self.ids = [p.stem for p in txt_files]
         self.input_size = config.INPUT_SIZE
         self.augment = augment
+        self.to_tensor = transforms.Compose(
+            [
+                transforms.Resize((self.input_size, self.input_size)),
+                transforms.ToTensor(),
+            ]
+        )
         self.color_jitter = transforms.ColorJitter(0.1, 0.1, 0.1, 0.05)
 
     def __len__(self) -> int:
@@ -112,10 +120,14 @@ class DentalDDS(torch.utils.data.Dataset):
         orig_w, orig_h = img.size
         if self.augment and self.split == "train":
             img = self.color_jitter(img)
+        img = self.to_tensor(img)
 
-        img, boxes = self.letterbox_and_adjust(img, ann.boxes)
+        boxes = ann.boxes.clone()
         labels = ann.labels.clone()
 
+        if boxes.numel() > 0:
+            # Normalize boxes already 0-1; adjust for resize with same ratio
+            boxes = boxes
         target = self.build_yolo_target(boxes, labels)
         meta = {
             "image_id": image_id,
@@ -124,40 +136,6 @@ class DentalDDS(torch.utils.data.Dataset):
             "labels": labels,
         }
         return img, target, meta
-
-    def letterbox_and_adjust(self, img: Image.Image, boxes: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Resize with aspect ratio preservation (letterbox) to INPUT_SIZE and adjust normalized boxes accordingly.
-        Boxes are expected in normalized cx, cy, w, h relative to original image size.
-        """
-        orig_w, orig_h = img.size
-        scale = min(config.INPUT_SIZE / orig_w, config.INPUT_SIZE / orig_h)
-        new_w, new_h = int(orig_w * scale), int(orig_h * scale)
-        pad_w = config.INPUT_SIZE - new_w
-        pad_h = config.INPUT_SIZE - new_h
-        pad_left = pad_w // 2
-        pad_top = pad_h // 2
-
-        # Resize and pad
-        img_resized = TF.resize(img, (new_h, new_w))
-        img_padded = TF.pad(img_resized, (pad_left, pad_top, pad_w - pad_left, pad_h - pad_top), fill=0)
-        img_tensor = transforms.ToTensor()(img_padded)
-
-        if boxes.numel() == 0:
-            return img_tensor, boxes
-
-        # Convert normalized boxes to absolute, apply scale/pad, then renormalize to INPUT_SIZE
-        boxes_abs = boxes.clone()
-        boxes_abs[:, 0] = boxes[:, 0] * orig_w * scale + pad_left  # cx
-        boxes_abs[:, 1] = boxes[:, 1] * orig_h * scale + pad_top   # cy
-        boxes_abs[:, 2] = boxes[:, 2] * orig_w * scale             # w
-        boxes_abs[:, 3] = boxes[:, 3] * orig_h * scale             # h
-
-        boxes_abs[:, 0] /= config.INPUT_SIZE
-        boxes_abs[:, 1] /= config.INPUT_SIZE
-        boxes_abs[:, 2] /= config.INPUT_SIZE
-        boxes_abs[:, 3] /= config.INPUT_SIZE
-        return img_tensor, boxes_abs
 
     def build_yolo_target(self, boxes: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         num_anchors = len(config.ANCHORS)
@@ -170,8 +148,8 @@ class DentalDDS(torch.utils.data.Dataset):
             cx, cy, w, h = box.tolist()
             gx = cx * grid_size
             gy = cy * grid_size
-            gi = int(min(max(gx, 0), grid_size - 1))
-            gj = int(min(max(gy, 0), grid_size - 1))
+            gi = int(gx)
+            gj = int(gy)
             cell_x = gx - gi
             cell_y = gy - gj
             best_anchor = self._select_best_anchor(w, h)
