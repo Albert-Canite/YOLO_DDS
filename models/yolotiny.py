@@ -17,7 +17,7 @@ class YOLOTiny(nn.Module):
         self.backbone = TinyBackbone()
         self.head = DetectionHead(in_channels=1024)
         self.stride = config.STRIDE
-        self.anchors = torch.tensor(config.ANCHORS, dtype=torch.float32)
+        self.register_buffer("anchors", torch.tensor(config.ANCHORS, dtype=torch.float32))
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         features = self.backbone(images)
