@@ -25,7 +25,6 @@ class TinyBackbone(nn.Module):
             conv_block(128, 256, k=3, s=1, p=1),
             nn.MaxPool2d(2, 2),
             conv_block(256, 512, k=3, s=1, p=1),
-            nn.MaxPool2d(2, 1, padding=0),
             conv_block(512, 1024, k=3, s=1, p=1),
         )
 
