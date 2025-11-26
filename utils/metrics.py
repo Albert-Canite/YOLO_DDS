@@ -31,24 +31,25 @@ class Evaluator:
 
     def add_batch(self, outputs: List[torch.Tensor], metas: List[Dict]):
         for out, meta in zip(outputs, metas):
+            out_cpu = out.detach().cpu()
             image_idx = len(self.image_id_map)
             self.image_id_map.append(meta["image_id"])
-            gt_boxes = meta["boxes"]
-            gt_labels = meta["labels"]
+            gt_boxes = meta["boxes"].detach().cpu().float()
+            gt_labels = meta["labels"].detach().cpu()
             for label, box in zip(gt_labels, gt_boxes):
                 self.ground_truths.setdefault(label.item(), []).append((image_idx, box))
-            if out.numel() == 0:
+            if out_cpu.numel() == 0:
                 continue
-            boxes = out[:, :4]
-            scores = out[:, 4]
-            labels = out[:, 5].long()
+            boxes = out_cpu[:, :4]
+            scores = out_cpu[:, 4]
+            labels = out_cpu[:, 5].long()
             for b, s, l in zip(boxes, scores, labels):
                 self.detections.setdefault(l.item(), []).append((s.item(), image_idx, b))
 
             # mean IoU against best GT
             if gt_boxes.numel() > 0:
                 gt_xyxy = cxcywh_to_xyxy(gt_boxes)
-                pred_xyxy = out[:, :4]
+                pred_xyxy = out_cpu[:, :4]
                 ious = box_iou(pred_xyxy, gt_xyxy)
                 self.total_iou += ious.max(dim=1)[0].mean().item()
                 self.iou_count += pred_xyxy.size(0)

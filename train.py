@@ -68,7 +68,7 @@ def validate(model, criterion, loader, device, evaluator: Evaluator):
             preds = model(images)
             loss_dict = criterion(preds, targets)
             total_loss += loss_dict["total"].item()
-            decoded = model.decode(preds)
+            decoded = model.decode(preds, conf_threshold=config.VAL_CONF_THRESHOLD)
             evaluator.add_batch(decoded, metas)
     avg_loss = total_loss / max(1, len(loader))
     metrics = evaluator.compute()
