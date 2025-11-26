@@ -64,12 +64,12 @@ ANCHORS = [
     (128, 128),
 ]
 STRIDE = 32
-NUM_CLASSES = 3  # Update if DDS uses a different number of categories
-CLASS_NAMES = [
-    "tooth",  # placeholder classes; adjust to dataset specification
-    "filling",
-    "caries",
-]
+
+# The DDS annotations in this repo contain 6 classes (ids 0–5). Update the
+# names if you have a different taxonomy, but keep the length in sync with
+# NUM_CLASSES to avoid silently dropping annotations.
+NUM_CLASSES = 6
+CLASS_NAMES = [f"class_{i}" for i in range(NUM_CLASSES)]
 
 # Training
 CHECKPOINT_DIR = REPO_ROOT / "checkpoints"
