@@ -41,7 +41,8 @@ class YOLOTiny(nn.Module):
         th = pred[..., 3]
         obj = torch.sigmoid(pred[..., 4])
         cls_logits = pred[..., 5:]
-        cls_scores = torch.softmax(cls_logits, dim=-1) if config.NUM_CLASSES > 1 else torch.ones_like(cls_logits)
+        # Use sigmoid to align with BCE training target
+        cls_scores = torch.sigmoid(cls_logits) if config.NUM_CLASSES > 1 else torch.ones_like(cls_logits)
 
         anchor_w = self.anchors[:, 0].view(1, a, 1, 1)
         anchor_h = self.anchors[:, 1].view(1, a, 1, 1)

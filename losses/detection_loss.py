@@ -57,7 +57,10 @@ class DetectionLoss(nn.Module):
         giou_loss_val = giou.sum() / (pos_mask.sum() + 1e-8)
 
         obj_loss = self.bce(obj_logit, t_obj)
-        obj_loss_val = obj_loss.sum() / obj_loss.numel()
+        # emphasize positives to avoid collapse to empty predictions
+        pos_obj = (obj_loss * pos_mask).sum()
+        neg_obj = (obj_loss * neg_mask).sum()
+        obj_loss_val = (5.0 * pos_obj + neg_obj) / (5.0 * pos_mask.sum() + neg_mask.sum() + 1e-8)
 
         if config.NUM_CLASSES > 1:
             cls_loss = F.binary_cross_entropy_with_logits(cls_logit, t_cls, reduction="none")

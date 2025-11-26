@@ -43,7 +43,9 @@ The script prints one line per epoch with training loss, validation loss, valida
 ```bash
 python eval.py --split test --checkpoint checkpoints/best.pt
 ```
-Outputs overall mAP@0.5, mean IoU, and per-class AP on the requested split.
+Outputs overall mAP@0.5, mean IoU, and per-class AP on the requested split. To visually inspect predictions and ground truth bo
+xes, add `--save-vis vis_outputs` (optionally with `--conf 0.1` to tune the validation-time confidence threshold); annotated PNG
+s for every evaluated image will be written to the chosen folder.
 
 ## Inference and visualization
 ```bash
