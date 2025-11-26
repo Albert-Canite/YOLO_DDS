@@ -59,11 +59,11 @@ MOMENTUM = 0.9
 # Model settings
 # Anchors are defined in pixels for the given INPUT_SIZE (width, height)
 ANCHORS = [
-    (32, 32),
-    (64, 64),
-    (128, 128),
+    (40, 110),
+    (56, 140),
+    (72, 180),
 ]
-STRIDE = 32
+STRIDE = 16
 
 # The DDS annotations in this repo contain 6 classes (ids 0–5). Update the
 # names if you have a different taxonomy, but keep the length in sync with
@@ -77,10 +77,10 @@ LOG_DIR = REPO_ROOT / "logs"
 DEVICE = "cuda"
 
 # Inference
-CONF_THRESHOLD = 0.25
-VAL_CONF_THRESHOLD = 0.25
+CONF_THRESHOLD = 0.35
+VAL_CONF_THRESHOLD = 0.35
 NMS_IOU_THRESHOLD = 0.5
-MAX_DETECTIONS = 50
+MAX_DETECTIONS = 30
 
 # Random seeds
 SEED = 42
