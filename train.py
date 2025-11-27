@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torchvision.ops import box_iou
 
 import config
-from datasets.dental_dds import DentalDDS, collate_fn
+from datasets.dental_dds import DentalDDS, collate_fn, compute_class_frequencies
 from losses.detection_loss import DetectionLoss
 from models.yolotiny import YOLOTiny
 from utils.metrics import Evaluator
@@ -39,7 +39,7 @@ def create_dataloaders():
         collate_fn=collate_fn,
         pin_memory=True,
     )
-    return train_loader, val_loader
+    return train_loader, val_loader, train_dataset
 
 
 def train_one_epoch(model, criterion, optimizer, loader, device) -> float:
@@ -80,9 +80,12 @@ def main(args):
     set_seed(config.SEED)
     device = torch.device(config.DEVICE if torch.cuda.is_available() else "cpu")
     config.CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
-    train_loader, val_loader = create_dataloaders()
+    train_loader, val_loader, train_dataset = create_dataloaders()
+    freq = compute_class_frequencies(train_dataset.label_dir)
+    class_weights = torch.tensor([1.0 / max(c, 1) for c in freq], dtype=torch.float32, device=device)
+
     model = YOLOTiny().to(device)
-    criterion = DetectionLoss()
+    criterion = DetectionLoss(class_weights=class_weights)
     optimizer = torch.optim.SGD(model.parameters(), lr=config.LEARNING_RATE, momentum=config.MOMENTUM, weight_decay=config.WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.EPOCHS)
 
