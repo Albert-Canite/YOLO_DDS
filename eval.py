@@ -3,7 +3,7 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
-from PIL import ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 
 import config
 from datasets.dental_dds import DentalDDS, collate_fn
