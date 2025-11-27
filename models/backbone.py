@@ -23,7 +23,8 @@ class TinyBackbone(nn.Module):
             conv_block(64, 128, k=3, s=1, p=1),
             nn.MaxPool2d(2, 2),
             conv_block(128, 256, k=3, s=1, p=1),
-            nn.MaxPool2d(2, 2),
+            # Keep final stride at 1/16 to improve localization granularity
+            # for narrow, tall tooth boxes.
             conv_block(256, 512, k=3, s=1, p=1),
             conv_block(512, 1024, k=3, s=1, p=1),
         )

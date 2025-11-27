@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -9,9 +9,15 @@ from utils.boxes import cxcywh_to_xyxy, giou_loss
 
 
 class DetectionLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, class_weights: Optional[torch.Tensor] = None):
         super().__init__()
         self.bce = nn.BCEWithLogitsLoss(reduction="none")
+        if class_weights is not None:
+            # Normalize weights to have mean=1 to keep loss scale stable
+            norm = class_weights.mean().clamp(min=1e-8)
+            self.register_buffer("class_weights", class_weights / norm)
+        else:
+            self.register_buffer("class_weights", None)
 
     def forward(self, preds: torch.Tensor, targets: torch.Tensor) -> Dict[str, torch.Tensor]:
         # preds: (B, A, H, W, 5 + C), raw outputs
@@ -64,6 +70,8 @@ class DetectionLoss(nn.Module):
 
         if config.NUM_CLASSES > 1:
             cls_loss = F.binary_cross_entropy_with_logits(cls_logit, t_cls, reduction="none")
+            if self.class_weights is not None:
+                cls_loss = cls_loss * self.class_weights.view(1, 1, 1, 1, -1)
             cls_loss_val = (cls_loss * pos_mask.unsqueeze(-1)).sum() / (pos_mask.sum() + 1e-8)
         else:
             cls_loss_val = torch.tensor(0.0, device=device)

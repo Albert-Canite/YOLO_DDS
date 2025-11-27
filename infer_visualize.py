@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch
 from PIL import Image, ImageDraw, ImageFont
-from torchvision import transforms
 
 import config
 from datasets.dental_dds import DentalDDS
@@ -55,11 +54,19 @@ def main():
         with torch.no_grad():
             preds = model(img_batch)
             decoded = model.decode(preds)[0]
-        img_vis = transforms.ToPILImage()(img_tensor)
-        gt_boxes = cxcywh_to_xyxy(meta["boxes"]) * config.INPUT_SIZE
-        draw_gt = draw_boxes(img_vis.copy(), gt_boxes, meta["labels"], scores=None, color="green")
+        orig_img = Image.open(meta["image_path"]).convert("RGB")
+        gt_boxes = cxcywh_to_xyxy(meta["boxes_orig"]).clone()
+        orig_w, orig_h = meta["orig_size"]
+        gt_boxes[:, 0::2] *= orig_w
+        gt_boxes[:, 1::2] *= orig_h
+        draw_gt = draw_boxes(orig_img.copy(), gt_boxes, meta["labels"], scores=None, color="green")
         if decoded.numel() > 0:
-            boxes = decoded[:, :4] * config.INPUT_SIZE
+            boxes = DentalDDS.unletterbox_boxes(
+                decoded[:, :4],
+                scale=meta["letterbox_scale"],
+                pad=meta["letterbox_pad"],
+                orig_size=meta["orig_size"],
+            )
             scores = decoded[:, 4]
             labels = decoded[:, 5]
             draw_boxes(draw_gt, boxes, labels, scores, color="red")

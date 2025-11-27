@@ -7,6 +7,7 @@ from typing import List, Tuple, Dict, Any
 import torch
 from PIL import Image
 from torchvision import transforms
+from torchvision.transforms import functional as TF
 
 import config
 from utils.boxes import cxcywh_to_xyxy
@@ -29,7 +30,10 @@ def parse_yolo_annotation(txt_path: Path) -> Annotation:
             cls_id, cx, cy, w, h = parts
             cls_idx = int(cls_id)
             if cls_idx < 0 or cls_idx >= config.NUM_CLASSES:
-                continue
+                raise ValueError(
+                    f"Annotation class id {cls_idx} in '{txt_path}' exceeds configured NUM_CLASSES={config.NUM_CLASSES}. "
+                    "Update config.NUM_CLASSES/CLASS_NAMES to match the dataset."
+                )
             labels.append(cls_idx)
             boxes.append([float(cx), float(cy), float(w), float(h)])
     if not boxes:
@@ -45,6 +49,20 @@ def load_split(split_file: Path) -> List[str]:
 def build_class_mapping() -> Dict[str, int]:
     # Use class names from config; assumes DDS annotations match
     return {name: idx for idx, name in enumerate(config.CLASS_NAMES)}
+
+
+def compute_class_frequencies(label_dir: Path) -> List[int]:
+    """Count per-class instances from YOLO txt annotations under label_dir."""
+    counts = [0 for _ in range(config.NUM_CLASSES)]
+    for txt in sorted(label_dir.glob("*.txt")):
+        for line in txt.read_text(encoding="utf-8").splitlines():
+            parts = line.strip().split()
+            if len(parts) != 5:
+                continue
+            cls_id = int(parts[0])
+            if 0 <= cls_id < config.NUM_CLASSES:
+                counts[cls_id] += 1
+    return counts
 
 
 class DentalDDS(torch.utils.data.Dataset):
@@ -84,12 +102,7 @@ class DentalDDS(torch.utils.data.Dataset):
             self.ids = [p.stem for p in txt_files]
         self.input_size = config.INPUT_SIZE
         self.augment = augment
-        self.to_tensor = transforms.Compose(
-            [
-                transforms.Resize((self.input_size, self.input_size)),
-                transforms.ToTensor(),
-            ]
-        )
+        self.to_tensor = transforms.ToTensor()
         self.color_jitter = transforms.ColorJitter(0.1, 0.1, 0.1, 0.05)
 
     def __len__(self) -> int:
@@ -115,24 +128,89 @@ class DentalDDS(torch.utils.data.Dataset):
         ann = self._load_annotation(image_id)
 
         orig_w, orig_h = img.size
+        boxes_orig = ann.boxes.clone()
         if self.augment and self.split == "train":
             img = self.color_jitter(img)
+        img, boxes, scale, pad = self._letterbox(img, ann.boxes)
         img = self.to_tensor(img)
 
-        boxes = ann.boxes.clone()
         labels = ann.labels.clone()
-
-        if boxes.numel() > 0:
-            # Normalize boxes already 0-1; adjust for resize with same ratio
-            boxes = boxes
         target = self.build_yolo_target(boxes, labels)
         meta = {
             "image_id": image_id,
+            "image_path": self._build_image_path(image_id),
             "orig_size": (orig_w, orig_h),
             "boxes": boxes,
+            "boxes_orig": boxes_orig,
             "labels": labels,
+            "letterbox_scale": scale,
+            "letterbox_pad": pad,
         }
         return img, target, meta
+
+    def _letterbox(self, img: Image.Image, boxes: torch.Tensor) -> Tuple[Image.Image, torch.Tensor, float, Tuple[int, int, int, int]]:
+        """Resize with unchanged aspect ratio and pad to square, adjusting boxes accordingly.
+
+        Returns padded image, normalized boxes in the padded space, the applied scale, and padding (l, t, r, b).
+        """
+        input_size = self.input_size
+        orig_w, orig_h = img.size
+        scale = min(input_size / orig_w, input_size / orig_h)
+        new_w, new_h = int(round(orig_w * scale)), int(round(orig_h * scale))
+        img_resized = img.resize((new_w, new_h), Image.BILINEAR)
+
+        pad_w = input_size - new_w
+        pad_h = input_size - new_h
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+        img_padded = TF.pad(img_resized, padding=[pad_left, pad_top, pad_right, pad_bottom], fill=114)
+
+        if boxes.numel() == 0:
+            return img_padded, boxes, scale, (pad_left, pad_top, pad_right, pad_bottom)
+
+        boxes_abs = boxes.clone()
+        boxes_abs[:, 0] = boxes_abs[:, 0] * orig_w * scale + pad_left
+        boxes_abs[:, 1] = boxes_abs[:, 1] * orig_h * scale + pad_top
+        boxes_abs[:, 2] = boxes_abs[:, 2] * orig_w * scale
+        boxes_abs[:, 3] = boxes_abs[:, 3] * orig_h * scale
+
+        boxes_adj = torch.zeros_like(boxes_abs)
+        boxes_adj[:, 0] = boxes_abs[:, 0] / input_size
+        boxes_adj[:, 1] = boxes_abs[:, 1] / input_size
+        boxes_adj[:, 2] = boxes_abs[:, 2] / input_size
+        boxes_adj[:, 3] = boxes_abs[:, 3] / input_size
+        return img_padded, boxes_adj, scale, (pad_left, pad_top, pad_right, pad_bottom)
+
+    def _build_image_path(self, image_id: str) -> Path:
+        jpg_path = self.image_dir / f"{image_id}.jpg"
+        if jpg_path.exists():
+            return jpg_path
+        png_path = self.image_dir / f"{image_id}.png"
+        return png_path
+
+    @staticmethod
+    def unletterbox_boxes(
+        boxes_xyxy: torch.Tensor,
+        scale: float,
+        pad: Tuple[int, int, int, int],
+        orig_size: Tuple[int, int],
+        input_size: int = None,
+    ) -> torch.Tensor:
+        """Map boxes from padded square back to original image coordinates (absolute pixels)."""
+        if boxes_xyxy.numel() == 0:
+            return boxes_xyxy
+        if input_size is None:
+            input_size = config.INPUT_SIZE
+        pad_left, pad_top, _, _ = pad
+        orig_w, orig_h = orig_size
+        boxes = boxes_xyxy.clone()
+        boxes[:, [0, 2]] = (boxes[:, [0, 2]] * input_size - pad_left) / scale
+        boxes[:, [1, 3]] = (boxes[:, [1, 3]] * input_size - pad_top) / scale
+        boxes[:, 0::2] = boxes[:, 0::2].clamp(0, orig_w)
+        boxes[:, 1::2] = boxes[:, 1::2].clamp(0, orig_h)
+        return boxes
 
     def build_yolo_target(self, boxes: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         num_anchors = len(config.ANCHORS)
