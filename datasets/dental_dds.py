@@ -237,24 +237,50 @@ class DentalDDS(torch.utils.data.Dataset):
         if boxes.numel() == 0:
             return target
 
+        # Track which (anchor, cell) slots are already filled to avoid silently
+        # overwriting targets when multiple teeth land in the same grid cell.
+        filled = torch.zeros((num_anchors, grid_size, grid_size), dtype=torch.bool)
+
         for box, label in zip(boxes, labels):
             cx, cy, w, h = box.tolist()
             gx = cx * grid_size
             gy = cy * grid_size
             gi = int(gx)
             gj = int(gy)
+            # Clamp to valid cell index in case a box center falls exactly on the border.
+            gi = max(min(gi, grid_size - 1), 0)
+            gj = max(min(gj, grid_size - 1), 0)
             cell_x = gx - gi
             cell_y = gy - gj
-            best_anchor = self._select_best_anchor(w, h)
-            anchor_w, anchor_h = config.ANCHORS[best_anchor]
+
+            # Prefer the highest-IoU anchor that is still free for this cell.
+            anchor_wh = torch.tensor(config.ANCHORS, dtype=torch.float32) / config.INPUT_SIZE
+            box_wh = torch.tensor([w, h])
+            inter = torch.min(anchor_wh[:, 0], box_wh[0]) * torch.min(anchor_wh[:, 1], box_wh[1])
+            anchor_area = anchor_wh[:, 0] * anchor_wh[:, 1]
+            box_area = box_wh[0] * box_wh[1]
+            iou = inter / (anchor_area + box_area - inter + 1e-8)
+            best_anchors = torch.argsort(iou, descending=True)
+
+            chosen_anchor = None
+            for a_idx in best_anchors:
+                if not filled[a_idx, gj, gi]:
+                    chosen_anchor = int(a_idx)
+                    break
+            # If all anchors already filled for this cell, fall back to the top-IoU anchor.
+            if chosen_anchor is None:
+                chosen_anchor = int(best_anchors[0])
+
+            anchor_w, anchor_h = config.ANCHORS[chosen_anchor]
             tw = math.log((w * config.INPUT_SIZE) / anchor_w + 1e-8)
             th = math.log((h * config.INPUT_SIZE) / anchor_h + 1e-8)
-            target[best_anchor, gj, gi, 0] = cell_x
-            target[best_anchor, gj, gi, 1] = cell_y
-            target[best_anchor, gj, gi, 2] = tw
-            target[best_anchor, gj, gi, 3] = th
-            target[best_anchor, gj, gi, 4] = 1.0
-            target[best_anchor, gj, gi, 5 + label] = 1.0
+            target[chosen_anchor, gj, gi, 0] = cell_x
+            target[chosen_anchor, gj, gi, 1] = cell_y
+            target[chosen_anchor, gj, gi, 2] = tw
+            target[chosen_anchor, gj, gi, 3] = th
+            target[chosen_anchor, gj, gi, 4] = 1.0
+            target[chosen_anchor, gj, gi, 5 + label] = 1.0
+            filled[chosen_anchor, gj, gi] = True
         return target
 
     def _select_best_anchor(self, w: float, h: float) -> int:
