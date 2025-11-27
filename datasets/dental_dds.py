@@ -29,7 +29,10 @@ def parse_yolo_annotation(txt_path: Path) -> Annotation:
             cls_id, cx, cy, w, h = parts
             cls_idx = int(cls_id)
             if cls_idx < 0 or cls_idx >= config.NUM_CLASSES:
-                continue
+                raise ValueError(
+                    f"Annotation class id {cls_idx} in '{txt_path}' exceeds configured NUM_CLASSES={config.NUM_CLASSES}. "
+                    "Update config.NUM_CLASSES/CLASS_NAMES to match the dataset."
+                )
             labels.append(cls_idx)
             boxes.append([float(cx), float(cy), float(w), float(h)])
     if not boxes:
@@ -45,6 +48,20 @@ def load_split(split_file: Path) -> List[str]:
 def build_class_mapping() -> Dict[str, int]:
     # Use class names from config; assumes DDS annotations match
     return {name: idx for idx, name in enumerate(config.CLASS_NAMES)}
+
+
+def compute_class_frequencies(label_dir: Path) -> List[int]:
+    """Count per-class instances from YOLO txt annotations under label_dir."""
+    counts = [0 for _ in range(config.NUM_CLASSES)]
+    for txt in sorted(label_dir.glob("*.txt")):
+        for line in txt.read_text(encoding="utf-8").splitlines():
+            parts = line.strip().split()
+            if len(parts) != 5:
+                continue
+            cls_id = int(parts[0])
+            if 0 <= cls_id < config.NUM_CLASSES:
+                counts[cls_id] += 1
+    return counts
 
 
 class DentalDDS(torch.utils.data.Dataset):

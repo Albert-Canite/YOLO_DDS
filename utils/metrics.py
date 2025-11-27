@@ -74,7 +74,8 @@ class Evaluator:
                     continue
                 gt_boxes = torch.stack([b for _, b in gt_candidates])
                 pred_box = box.unsqueeze(0)
-                ious = box_iou(cxcywh_to_xyxy(pred_box), cxcywh_to_xyxy(gt_boxes))
+                # Predictions are already in xyxy; only GT needs conversion
+                ious = box_iou(pred_box, cxcywh_to_xyxy(gt_boxes))
                 max_iou, max_idx = ious.max(dim=1)
                 if max_iou.item() >= self.iou_threshold and gt_flags.get((img_id, max_idx.item()), False) is False:
                     tp[i] = 1
