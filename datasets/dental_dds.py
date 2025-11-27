@@ -7,6 +7,7 @@ from typing import List, Tuple, Dict, Any
 import torch
 from PIL import Image
 from torchvision import transforms
+from torchvision.transforms import functional as TF
 
 import config
 from utils.boxes import cxcywh_to_xyxy
@@ -101,12 +102,7 @@ class DentalDDS(torch.utils.data.Dataset):
             self.ids = [p.stem for p in txt_files]
         self.input_size = config.INPUT_SIZE
         self.augment = augment
-        self.to_tensor = transforms.Compose(
-            [
-                transforms.Resize((self.input_size, self.input_size)),
-                transforms.ToTensor(),
-            ]
-        )
+        self.to_tensor = transforms.ToTensor()
         self.color_jitter = transforms.ColorJitter(0.1, 0.1, 0.1, 0.05)
 
     def __len__(self) -> int:
@@ -134,14 +130,10 @@ class DentalDDS(torch.utils.data.Dataset):
         orig_w, orig_h = img.size
         if self.augment and self.split == "train":
             img = self.color_jitter(img)
+        img, boxes = self._letterbox(img, ann.boxes)
         img = self.to_tensor(img)
 
-        boxes = ann.boxes.clone()
         labels = ann.labels.clone()
-
-        if boxes.numel() > 0:
-            # Normalize boxes already 0-1; adjust for resize with same ratio
-            boxes = boxes
         target = self.build_yolo_target(boxes, labels)
         meta = {
             "image_id": image_id,
@@ -150,6 +142,38 @@ class DentalDDS(torch.utils.data.Dataset):
             "labels": labels,
         }
         return img, target, meta
+
+    def _letterbox(self, img: Image.Image, boxes: torch.Tensor) -> Tuple[Image.Image, torch.Tensor]:
+        """Resize with unchanged aspect ratio and pad to square, adjusting boxes accordingly."""
+        input_size = self.input_size
+        orig_w, orig_h = img.size
+        scale = min(input_size / orig_w, input_size / orig_h)
+        new_w, new_h = int(round(orig_w * scale)), int(round(orig_h * scale))
+        img_resized = img.resize((new_w, new_h), Image.BILINEAR)
+
+        pad_w = input_size - new_w
+        pad_h = input_size - new_h
+        pad_left = pad_w // 2
+        pad_right = pad_w - pad_left
+        pad_top = pad_h // 2
+        pad_bottom = pad_h - pad_top
+        img_padded = TF.pad(img_resized, padding=[pad_left, pad_top, pad_right, pad_bottom], fill=114)
+
+        if boxes.numel() == 0:
+            return img_padded, boxes
+
+        boxes_abs = boxes.clone()
+        boxes_abs[:, 0] = boxes_abs[:, 0] * orig_w * scale + pad_left
+        boxes_abs[:, 1] = boxes_abs[:, 1] * orig_h * scale + pad_top
+        boxes_abs[:, 2] = boxes_abs[:, 2] * orig_w * scale
+        boxes_abs[:, 3] = boxes_abs[:, 3] * orig_h * scale
+
+        boxes_adj = torch.zeros_like(boxes_abs)
+        boxes_adj[:, 0] = boxes_abs[:, 0] / input_size
+        boxes_adj[:, 1] = boxes_abs[:, 1] / input_size
+        boxes_adj[:, 2] = boxes_abs[:, 2] / input_size
+        boxes_adj[:, 3] = boxes_abs[:, 3] / input_size
+        return img_padded, boxes_adj
 
     def build_yolo_target(self, boxes: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         num_anchors = len(config.ANCHORS)
