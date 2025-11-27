@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 
 import torch
 import torch.nn as nn
@@ -9,7 +9,7 @@ from utils.boxes import cxcywh_to_xyxy, giou_loss
 
 
 class DetectionLoss(nn.Module):
-    def __init__(self, class_weights: torch.Tensor | None = None):
+    def __init__(self, class_weights: Optional[torch.Tensor] = None):
         super().__init__()
         self.bce = nn.BCEWithLogitsLoss(reduction="none")
         if class_weights is not None:
