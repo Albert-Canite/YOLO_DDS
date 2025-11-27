@@ -50,6 +50,20 @@ def build_class_mapping() -> Dict[str, int]:
     return {name: idx for idx, name in enumerate(config.CLASS_NAMES)}
 
 
+def compute_class_frequencies(label_dir: Path) -> List[int]:
+    """Count per-class instances from YOLO txt annotations under label_dir."""
+    counts = [0 for _ in range(config.NUM_CLASSES)]
+    for txt in sorted(label_dir.glob("*.txt")):
+        for line in txt.read_text(encoding="utf-8").splitlines():
+            parts = line.strip().split()
+            if len(parts) != 5:
+                continue
+            cls_id = int(parts[0])
+            if 0 <= cls_id < config.NUM_CLASSES:
+                counts[cls_id] += 1
+    return counts
+
+
 class DentalDDS(torch.utils.data.Dataset):
     def __init__(self, split: str = "train", augment: bool = True):
         super().__init__()

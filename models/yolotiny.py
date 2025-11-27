@@ -58,21 +58,35 @@ class YOLOTiny(nn.Module):
             boxes_b = boxes[bi].reshape(-1, 4)
             obj_b = obj[bi].reshape(-1)
             cls_b = cls_scores[bi].reshape(-1, config.NUM_CLASSES)
-            scores, labels = cls_b.max(dim=-1)
-            scores = scores * obj_b
-            mask = scores > conf_threshold
-            if mask.sum() == 0:
+
+            per_image = []
+            for cls_id in range(config.NUM_CLASSES):
+                scores_cls = cls_b[:, cls_id] * obj_b
+                mask = scores_cls > conf_threshold
+                if mask.sum() == 0:
+                    continue
+                boxes_sel = boxes_b[mask]
+                scores_sel = scores_cls[mask]
+                keep = nms(boxes_sel, scores_sel, config.NMS_IOU_THRESHOLD)
+                keep = keep[scores_sel[keep].argsort(descending=True)]
+                per_image.append(
+                    torch.cat(
+                        [
+                            boxes_sel[keep],
+                            scores_sel[keep].unsqueeze(1),
+                            torch.full((keep.numel(), 1), float(cls_id), device=device),
+                        ],
+                        dim=1,
+                    )
+                )
+
+            if not per_image:
                 outputs.append(torch.zeros((0, 6), device=device))
                 continue
-            boxes_sel = boxes_b[mask]
-            scores_sel = scores[mask]
-            labels_sel = labels[mask]
-            keep = nms(boxes_sel, scores_sel, config.NMS_IOU_THRESHOLD)
-            keep_sorted = keep[scores_sel[keep].argsort(descending=True)]
-            if keep_sorted.numel() > config.MAX_DETECTIONS:
-                keep_sorted = keep_sorted[: config.MAX_DETECTIONS]
-            boxes_sel = boxes_sel[keep_sorted]
-            scores_sel = scores_sel[keep_sorted]
-            labels_sel = labels_sel[keep_sorted]
-            outputs.append(torch.cat([boxes_sel, scores_sel.unsqueeze(1), labels_sel.unsqueeze(1).float()], dim=1))
+
+            merged = torch.cat(per_image, dim=0)
+            if merged.size(0) > config.MAX_DETECTIONS:
+                order = merged[:, 4].argsort(descending=True)
+                merged = merged[order[: config.MAX_DETECTIONS]]
+            outputs.append(merged)
         return outputs
