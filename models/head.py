@@ -18,6 +18,12 @@ class DetectionHead(nn.Module):
         self.conv1 = conv_block(in_channels, 512, k=3, s=1, p=1)
         out_channels = len(config.ANCHORS) * (5 + config.NUM_CLASSES)
         self.pred = nn.Conv2d(512, out_channels, kernel_size=1)
+        with torch.no_grad():
+            # Lower initial objectness/class logits to reduce early false positives
+            bias = self.pred.bias.view(len(config.ANCHORS), 5 + config.NUM_CLASSES)
+            bias[:, 4] = -4.0
+            if config.NUM_CLASSES > 0:
+                bias[:, 5:] = -4.0
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.conv1(x)
