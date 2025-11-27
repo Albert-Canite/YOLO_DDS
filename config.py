@@ -77,8 +77,10 @@ LOG_DIR = REPO_ROOT / "logs"
 DEVICE = "cuda"
 
 # Inference
+# Use a low validation threshold to measure recall and avoid under-reporting
+# mAP/IoU when objectness logits are still conservative during training.
 CONF_THRESHOLD = 0.35
-VAL_CONF_THRESHOLD = 0.35
+VAL_CONF_THRESHOLD = 0.05
 NMS_IOU_THRESHOLD = 0.5
 MAX_DETECTIONS = 30
 
