@@ -19,9 +19,21 @@ class Annotation:
     labels: torch.Tensor  # (N,)
 
 
+def _is_valid_box(cx: float, cy: float, w: float, h: float) -> bool:
+    """Check normalized YOLO box validity (center and size within (0, 1])."""
+    if w <= 0 or h <= 0:
+        return False
+    if not (0 <= cx <= 1 and 0 <= cy <= 1):
+        return False
+    if not (0 < w <= 1 and 0 < h <= 1):
+        return False
+    return True
+
+
 def parse_yolo_annotation(txt_path: Path) -> Annotation:
     boxes = []
     labels = []
+    dropped = 0
     with open(txt_path, "r", encoding="utf-8") as f:
         for line in f:
             parts = line.strip().split()
@@ -29,13 +41,19 @@ def parse_yolo_annotation(txt_path: Path) -> Annotation:
                 continue
             cls_id, cx, cy, w, h = parts
             cls_idx = int(cls_id)
+            cx_f, cy_f, w_f, h_f = map(float, (cx, cy, w, h))
             if cls_idx < 0 or cls_idx >= config.NUM_CLASSES:
                 raise ValueError(
                     f"Annotation class id {cls_idx} in '{txt_path}' exceeds configured NUM_CLASSES={config.NUM_CLASSES}. "
                     "Update config.NUM_CLASSES/CLASS_NAMES to match the dataset."
                 )
+            if not _is_valid_box(cx_f, cy_f, w_f, h_f):
+                dropped += 1
+                continue
             labels.append(cls_idx)
-            boxes.append([float(cx), float(cy), float(w), float(h)])
+            boxes.append([cx_f, cy_f, w_f, h_f])
+    if dropped > 0:
+        print(f"[WARN] Dropped {dropped} invalid boxes in {txt_path.name} (zero area or out of bounds)")
     if not boxes:
         return Annotation(boxes=torch.zeros((0, 4), dtype=torch.float32), labels=torch.zeros((0,), dtype=torch.int64))
     return Annotation(boxes=torch.tensor(boxes, dtype=torch.float32), labels=torch.tensor(labels, dtype=torch.int64))
