@@ -4,6 +4,7 @@ import torch
 from torchvision.ops import box_iou
 
 import config
+from datasets.dental_dds import DentalDDS
 from utils.boxes import cxcywh_to_xyxy
 
 
@@ -34,23 +35,31 @@ class Evaluator:
             out_cpu = out.detach().cpu()
             image_idx = len(self.image_id_map)
             self.image_id_map.append(meta["image_id"])
-            gt_boxes = meta["boxes"].detach().cpu().float()
+            gt_boxes_norm = meta["boxes_orig"].detach().cpu().float()
             gt_labels = meta["labels"].detach().cpu()
-            for label, box in zip(gt_labels, gt_boxes):
+            orig_w, orig_h = meta["orig_size"]
+            gt_xyxy_abs = cxcywh_to_xyxy(gt_boxes_norm)
+            gt_xyxy_abs[:, 0::2] *= orig_w
+            gt_xyxy_abs[:, 1::2] *= orig_h
+            for label, box in zip(gt_labels, gt_xyxy_abs):
                 self.ground_truths.setdefault(label.item(), []).append((image_idx, box))
             if out_cpu.numel() == 0:
                 continue
-            boxes = out_cpu[:, :4]
+            boxes = DentalDDS.unletterbox_boxes(
+                out_cpu[:, :4],
+                scale=meta["letterbox_scale"],
+                pad=meta["letterbox_pad"],
+                orig_size=meta["orig_size"],
+            )
             scores = out_cpu[:, 4]
             labels = out_cpu[:, 5].long()
             for b, s, l in zip(boxes, scores, labels):
                 self.detections.setdefault(l.item(), []).append((s.item(), image_idx, b))
 
-            # mean IoU against best GT
-            if gt_boxes.numel() > 0:
-                gt_xyxy = cxcywh_to_xyxy(gt_boxes)
-                pred_xyxy = out_cpu[:, :4]
-                ious = box_iou(pred_xyxy, gt_xyxy)
+            # mean IoU against best GT in original coordinates
+            if gt_xyxy_abs.numel() > 0:
+                pred_xyxy = boxes
+                ious = box_iou(pred_xyxy, gt_xyxy_abs)
                 self.total_iou += ious.max(dim=1)[0].mean().item()
                 self.iou_count += pred_xyxy.size(0)
 
@@ -74,8 +83,7 @@ class Evaluator:
                     continue
                 gt_boxes = torch.stack([b for _, b in gt_candidates])
                 pred_box = box.unsqueeze(0)
-                # Predictions are already in xyxy; only GT needs conversion
-                ious = box_iou(pred_box, cxcywh_to_xyxy(gt_boxes))
+                ious = box_iou(pred_box, gt_boxes)
                 max_iou, max_idx = ious.max(dim=1)
                 if max_iou.item() >= self.iou_threshold and gt_flags.get((img_id, max_idx.item()), False) is False:
                     tp[i] = 1

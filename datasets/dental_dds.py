@@ -128,23 +128,31 @@ class DentalDDS(torch.utils.data.Dataset):
         ann = self._load_annotation(image_id)
 
         orig_w, orig_h = img.size
+        boxes_orig = ann.boxes.clone()
         if self.augment and self.split == "train":
             img = self.color_jitter(img)
-        img, boxes = self._letterbox(img, ann.boxes)
+        img, boxes, scale, pad = self._letterbox(img, ann.boxes)
         img = self.to_tensor(img)
 
         labels = ann.labels.clone()
         target = self.build_yolo_target(boxes, labels)
         meta = {
             "image_id": image_id,
+            "image_path": self._build_image_path(image_id),
             "orig_size": (orig_w, orig_h),
             "boxes": boxes,
+            "boxes_orig": boxes_orig,
             "labels": labels,
+            "letterbox_scale": scale,
+            "letterbox_pad": pad,
         }
         return img, target, meta
 
-    def _letterbox(self, img: Image.Image, boxes: torch.Tensor) -> Tuple[Image.Image, torch.Tensor]:
-        """Resize with unchanged aspect ratio and pad to square, adjusting boxes accordingly."""
+    def _letterbox(self, img: Image.Image, boxes: torch.Tensor) -> Tuple[Image.Image, torch.Tensor, float, Tuple[int, int, int, int]]:
+        """Resize with unchanged aspect ratio and pad to square, adjusting boxes accordingly.
+
+        Returns padded image, normalized boxes in the padded space, the applied scale, and padding (l, t, r, b).
+        """
         input_size = self.input_size
         orig_w, orig_h = img.size
         scale = min(input_size / orig_w, input_size / orig_h)
@@ -160,7 +168,7 @@ class DentalDDS(torch.utils.data.Dataset):
         img_padded = TF.pad(img_resized, padding=[pad_left, pad_top, pad_right, pad_bottom], fill=114)
 
         if boxes.numel() == 0:
-            return img_padded, boxes
+            return img_padded, boxes, scale, (pad_left, pad_top, pad_right, pad_bottom)
 
         boxes_abs = boxes.clone()
         boxes_abs[:, 0] = boxes_abs[:, 0] * orig_w * scale + pad_left
@@ -173,7 +181,36 @@ class DentalDDS(torch.utils.data.Dataset):
         boxes_adj[:, 1] = boxes_abs[:, 1] / input_size
         boxes_adj[:, 2] = boxes_abs[:, 2] / input_size
         boxes_adj[:, 3] = boxes_abs[:, 3] / input_size
-        return img_padded, boxes_adj
+        return img_padded, boxes_adj, scale, (pad_left, pad_top, pad_right, pad_bottom)
+
+    def _build_image_path(self, image_id: str) -> Path:
+        jpg_path = self.image_dir / f"{image_id}.jpg"
+        if jpg_path.exists():
+            return jpg_path
+        png_path = self.image_dir / f"{image_id}.png"
+        return png_path
+
+    @staticmethod
+    def unletterbox_boxes(
+        boxes_xyxy: torch.Tensor,
+        scale: float,
+        pad: Tuple[int, int, int, int],
+        orig_size: Tuple[int, int],
+        input_size: int = None,
+    ) -> torch.Tensor:
+        """Map boxes from padded square back to original image coordinates (absolute pixels)."""
+        if boxes_xyxy.numel() == 0:
+            return boxes_xyxy
+        if input_size is None:
+            input_size = config.INPUT_SIZE
+        pad_left, pad_top, _, _ = pad
+        orig_w, orig_h = orig_size
+        boxes = boxes_xyxy.clone()
+        boxes[:, [0, 2]] = (boxes[:, [0, 2]] * input_size - pad_left) / scale
+        boxes[:, [1, 3]] = (boxes[:, [1, 3]] * input_size - pad_top) / scale
+        boxes[:, 0::2] = boxes[:, 0::2].clamp(0, orig_w)
+        boxes[:, 1::2] = boxes[:, 1::2].clamp(0, orig_h)
+        return boxes
 
     def build_yolo_target(self, boxes: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         num_anchors = len(config.ANCHORS)
