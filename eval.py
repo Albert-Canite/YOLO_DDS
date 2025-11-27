@@ -3,7 +3,6 @@ from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader
-from torchvision import transforms
 from PIL import ImageDraw, ImageFont
 
 import config
@@ -48,7 +47,6 @@ def evaluate(split: str, checkpoint: Path, save_vis: Path = None, conf_threshold
     load_checkpoint(model, checkpoint, device)
     model.eval()
     evaluator = Evaluator(iou_threshold=0.5)
-    to_pil = transforms.ToPILImage()
     vis_dir = None
     if save_vis is not None:
         vis_dir = Path(save_vis)
@@ -62,15 +60,23 @@ def evaluate(split: str, checkpoint: Path, save_vis: Path = None, conf_threshold
             evaluator.add_batch(decoded, metas)
             if vis_dir is not None:
                 for i, pred in enumerate(decoded):
-                    img_pil = to_pil(images[i].cpu())
-                    gt_boxes = cxcywh_to_xyxy(metas[i]["boxes"]) * config.INPUT_SIZE
-                    _draw_boxes(img_pil, gt_boxes, metas[i]["labels"], color="green")
+                    orig_img = Image.open(metas[i]["image_path"]).convert("RGB")
+                    gt_boxes = cxcywh_to_xyxy(metas[i]["boxes_orig"])
+                    orig_w, orig_h = metas[i]["orig_size"]
+                    gt_boxes[:, 0::2] *= orig_w
+                    gt_boxes[:, 1::2] *= orig_h
+                    _draw_boxes(orig_img, gt_boxes, metas[i]["labels"], color="green")
                     if pred.numel() > 0:
-                        boxes = pred[:, :4] * config.INPUT_SIZE
+                        boxes = DentalDDS.unletterbox_boxes(
+                            pred[:, :4],
+                            scale=metas[i]["letterbox_scale"],
+                            pad=metas[i]["letterbox_pad"],
+                            orig_size=metas[i]["orig_size"],
+                        )
                         scores = pred[:, 4]
                         labels = pred[:, 5]
-                        _draw_boxes(img_pil, boxes, labels, scores=scores, color="red")
-                    img_pil.save(vis_dir / f"{metas[i]['image_id']}.png")
+                        _draw_boxes(orig_img, boxes, labels, scores=scores, color="red")
+                    orig_img.save(vis_dir / f"{metas[i]['image_id']}.png")
     metrics = evaluator.compute()
     print(f"Evaluation on {split}: mAP@0.5={metrics['mAP']:.4f}, mean IoU={metrics['mean_iou']:.4f}")
     for cls_idx, ap in metrics["per_class_ap"].items():

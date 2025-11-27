@@ -59,17 +59,17 @@ MOMENTUM = 0.9
 # Model settings
 # Anchors are defined in pixels for the given INPUT_SIZE (width, height)
 ANCHORS = [
-    (32, 32),
-    (64, 64),
-    (128, 128),
+    (40, 110),
+    (56, 140),
+    (72, 180),
 ]
-STRIDE = 32
-NUM_CLASSES = 3  # Update if DDS uses a different number of categories
-CLASS_NAMES = [
-    "tooth",  # placeholder classes; adjust to dataset specification
-    "filling",
-    "caries",
-]
+STRIDE = 16
+
+# The DDS annotations in this repo contain 6 classes (ids 0–5). Update the
+# names if you have a different taxonomy, but keep the length in sync with
+# NUM_CLASSES to avoid silently dropping annotations.
+NUM_CLASSES = 6
+CLASS_NAMES = [f"class_{i}" for i in range(NUM_CLASSES)]
 
 # Training
 CHECKPOINT_DIR = REPO_ROOT / "checkpoints"
@@ -77,10 +77,10 @@ LOG_DIR = REPO_ROOT / "logs"
 DEVICE = "cuda"
 
 # Inference
-CONF_THRESHOLD = 0.25
-VAL_CONF_THRESHOLD = 0.05
+CONF_THRESHOLD = 0.35
+VAL_CONF_THRESHOLD = 0.35
 NMS_IOU_THRESHOLD = 0.5
-MAX_DETECTIONS = 100
+MAX_DETECTIONS = 30
 
 # Random seeds
 SEED = 42
