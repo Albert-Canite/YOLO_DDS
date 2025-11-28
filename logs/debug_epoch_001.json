@@ -1,0 +1,94 @@
+{
+  "epoch": 1,
+  "train_loss": 1.3383192415748324,
+  "val_loss": 1.3641439974308014,
+  "train_pos_per_image": 10.103571428571428,
+  "val_pos_per_image": 4.958333333333333,
+  "metrics": {
+    "mAP": 0.0,
+    "per_class_ap": {
+      "0": 0.0,
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.0
+    },
+    "mean_iou": 0.0
+  },
+  "label_stats": {
+    "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
+    "num_images": 558,
+    "total_valid_boxes": 5642,
+    "invalid_boxes": 0,
+    "per_class_counts": [
+      853,
+      172,
+      729,
+      69,
+      526,
+      3293
+    ],
+    "boxes_per_image": {
+      "min": 1,
+      "max": 25,
+      "mean": 10.11111111111111
+    }
+  },
+  "val_debug_batch": {
+    "images": [
+      {
+        "image_id": "105_jpg.rf.fc10e27e37bdacf62e154171aa518d6a",
+        "orig_size": [
+          640,
+          315
+        ],
+        "num_gt": 3,
+        "num_pred_val_thresh": 0,
+        "avg_obj_logit": -4.345917224884033,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.12262673676013947,
+        "gt_to_pred_iou_mean": 0.6455528736114502
+      },
+      {
+        "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
+        "orig_size": [
+          640,
+          311
+        ],
+        "num_gt": 7,
+        "num_pred_val_thresh": 0,
+        "avg_obj_logit": -4.3992156982421875,
+        "num_pred_low_thresh": 9,
+        "pred_to_gt_iou_mean": 0.20930927991867065,
+        "gt_to_pred_iou_mean": 0.16677618026733398
+      },
+      {
+        "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
+        "orig_size": [
+          640,
+          278
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 0,
+        "avg_obj_logit": -4.381093978881836,
+        "num_pred_low_thresh": 26,
+        "pred_to_gt_iou_mean": 0.10230281949043274,
+        "gt_to_pred_iou_mean": 0.7525246143341064
+      },
+      {
+        "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
+        "orig_size": [
+          640,
+          312
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 0,
+        "avg_obj_logit": -4.36068868637085,
+        "num_pred_low_thresh": 24,
+        "pred_to_gt_iou_mean": 0.0037785901222378016,
+        "gt_to_pred_iou_mean": 0.04534308239817619
+      }
+    ]
+  }
+}

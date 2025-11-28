@@ -1,0 +1,94 @@
+{
+  "epoch": 25,
+  "train_loss": 0.1814920206155096,
+  "val_loss": 1.15455828110377,
+  "train_pos_per_image": 10.121428571428572,
+  "val_pos_per_image": 4.958333333333333,
+  "metrics": {
+    "mAP": 0.1097680926322937,
+    "per_class_ap": {
+      "0": 0.1696428656578064,
+      "1": 0.0,
+      "2": 0.3312765955924988,
+      "3": 0.0,
+      "4": 0.02777777798473835,
+      "5": 0.12991128861904144
+    },
+    "mean_iou": 0.7418925096591313
+  },
+  "label_stats": {
+    "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
+    "num_images": 558,
+    "total_valid_boxes": 5642,
+    "invalid_boxes": 0,
+    "per_class_counts": [
+      853,
+      172,
+      729,
+      69,
+      526,
+      3293
+    ],
+    "boxes_per_image": {
+      "min": 1,
+      "max": 25,
+      "mean": 10.11111111111111
+    }
+  },
+  "val_debug_batch": {
+    "images": [
+      {
+        "image_id": "105_jpg.rf.fc10e27e37bdacf62e154171aa518d6a",
+        "orig_size": [
+          640,
+          315
+        ],
+        "num_gt": 3,
+        "num_pred_val_thresh": 15,
+        "avg_obj_logit": -5.858926296234131,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.05118958279490471,
+        "gt_to_pred_iou_mean": 0.5174428820610046
+      },
+      {
+        "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
+        "orig_size": [
+          640,
+          311
+        ],
+        "num_gt": 7,
+        "num_pred_val_thresh": 11,
+        "avg_obj_logit": -6.007831573486328,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.24575862288475037,
+        "gt_to_pred_iou_mean": 0.6656326055526733
+      },
+      {
+        "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
+        "orig_size": [
+          640,
+          278
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 15,
+        "avg_obj_logit": -5.854118824005127,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.08859003335237503,
+        "gt_to_pred_iou_mean": 0.8313359022140503
+      },
+      {
+        "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
+        "orig_size": [
+          640,
+          312
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 8,
+        "avg_obj_logit": -5.9521050453186035,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.07841065526008606,
+        "gt_to_pred_iou_mean": 0.6114669442176819
+      }
+    ]
+  }
+}
