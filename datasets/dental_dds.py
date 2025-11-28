@@ -83,6 +83,47 @@ def compute_class_frequencies(label_dir: Path) -> List[int]:
     return counts
 
 
+def gather_label_stats(label_dir: Path) -> Dict[str, Any]:
+    """Scan annotations to compute validity and size stats for debugging."""
+    per_class = [0 for _ in range(config.NUM_CLASSES)]
+    per_image_counts = []
+    invalid_boxes = 0
+    for txt in sorted(label_dir.glob("*.txt")):
+        valid_boxes = 0
+        for line in txt.read_text(encoding="utf-8").splitlines():
+            parts = line.strip().split()
+            if len(parts) != 5:
+                continue
+            cls_id, cx, cy, w, h = parts
+            cls_idx = int(cls_id)
+            try:
+                cx_f, cy_f, w_f, h_f = map(float, (cx, cy, w, h))
+            except ValueError:
+                invalid_boxes += 1
+                continue
+            if not _is_valid_box(cx_f, cy_f, w_f, h_f):
+                invalid_boxes += 1
+                continue
+            if 0 <= cls_idx < config.NUM_CLASSES:
+                per_class[cls_idx] += 1
+            valid_boxes += 1
+        per_image_counts.append(valid_boxes)
+
+    total_boxes = sum(per_class)
+    return {
+        "label_dir": str(label_dir),
+        "num_images": len(per_image_counts),
+        "total_valid_boxes": total_boxes,
+        "invalid_boxes": invalid_boxes,
+        "per_class_counts": per_class,
+        "boxes_per_image": {
+            "min": min(per_image_counts) if per_image_counts else 0,
+            "max": max(per_image_counts) if per_image_counts else 0,
+            "mean": float(sum(per_image_counts) / len(per_image_counts)) if per_image_counts else 0.0,
+        },
+    }
+
+
 class DentalDDS(torch.utils.data.Dataset):
     def __init__(self, split: str = "train", augment: bool = True):
         super().__init__()

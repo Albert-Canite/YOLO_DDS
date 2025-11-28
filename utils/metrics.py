@@ -56,12 +56,23 @@ class Evaluator:
             for b, s, l in zip(boxes, scores, labels):
                 self.detections.setdefault(l.item(), []).append((s.item(), image_idx, b))
 
-            # mean IoU against best GT in original coordinates
+            # mean IoU against matched GT in original coordinates (greedy match)
             if gt_xyxy_abs.numel() > 0:
-                pred_xyxy = boxes
-                ious = box_iou(pred_xyxy, gt_xyxy_abs)
-                self.total_iou += ious.max(dim=1)[0].mean().item()
-                self.iou_count += pred_xyxy.size(0)
+                ious = box_iou(boxes, gt_xyxy_abs)
+                if ious.numel() > 0:
+                    # Greedy assign highest-IoU pairs above threshold to avoid
+                    # counting thousands of unmatched low-score predictions.
+                    matched = []
+                    gt_used = set()
+                    for pred_idx in torch.argsort(scores, descending=True):
+                        iou_row = ious[pred_idx]
+                        max_iou, max_gt = iou_row.max(dim=0)
+                        if max_iou.item() >= self.iou_threshold and max_gt.item() not in gt_used:
+                            matched.append(max_iou.item())
+                            gt_used.add(max_gt.item())
+                    if matched:
+                        self.total_iou += sum(matched)
+                        self.iou_count += len(matched)
 
     def compute(self) -> Dict[str, float]:
         aps = []
