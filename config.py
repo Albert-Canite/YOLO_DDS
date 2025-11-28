@@ -77,10 +77,13 @@ LOG_DIR = REPO_ROOT / "logs"
 DEVICE = "cuda"
 
 # Inference
+# Use a slightly lower validation threshold than inference to keep recall, but
+# avoid flooding metrics with extremely low-score boxes that swamp IoU.
 CONF_THRESHOLD = 0.35
-VAL_CONF_THRESHOLD = 0.35
+VAL_CONF_THRESHOLD = 0.20
 NMS_IOU_THRESHOLD = 0.5
 MAX_DETECTIONS = 30
+OBJ_IGNORE_IOU = 0.5
 
 # Random seeds
 SEED = 42

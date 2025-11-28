@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import config
-from utils.boxes import cxcywh_to_xyxy, giou_loss
+from utils.boxes import cxcywh_to_xyxy, giou_loss, box_iou
 
 
 class DetectionLoss(nn.Module):
@@ -57,7 +57,20 @@ class DetectionLoss(nn.Module):
         tgt_boxes = cxcywh_to_xyxy(torch.stack([tgt_cx, tgt_cy, tgt_w, tgt_h], dim=-1))
 
         pos_mask = t_obj > 0
-        neg_mask = ~pos_mask
+
+        # Ignore objectness penalty for anchors whose predicted boxes heavily
+        # overlap any GT, even if they are not the designated positive anchor
+        # for that GT. This prevents punishing nearby anchors and collapsing
+        # recall in crowded regions.
+        ignore_mask = torch.zeros_like(t_obj, dtype=torch.bool)
+        for bi in range(b):
+            if pos_mask[bi].any():
+                gt_boxes = tgt_boxes[bi][pos_mask[bi]]
+                preds_flat = pred_boxes[bi].view(-1, 4)
+                ious = box_iou(preds_flat, gt_boxes)
+                max_iou = ious.max(dim=1).values.view(a, h, w)
+                ignore_mask[bi] = max_iou > config.OBJ_IGNORE_IOU
+        neg_mask = (~pos_mask) & (~ignore_mask)
 
         giou = giou_loss(pred_boxes, tgt_boxes) * pos_mask
         giou_loss_val = giou.sum() / (pos_mask.sum() + 1e-8)
