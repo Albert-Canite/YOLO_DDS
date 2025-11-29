@@ -29,6 +29,8 @@ class Evaluator:
         self.image_id_map: List[str] = []
         self.total_iou = 0.0
         self.iou_count = 0
+        self.per_class_gt = [0 for _ in range(config.NUM_CLASSES)]
+        self.per_class_preds = [0 for _ in range(config.NUM_CLASSES)]
 
     def add_batch(self, outputs: List[torch.Tensor], metas: List[Dict]):
         for out, meta in zip(outputs, metas):
@@ -43,6 +45,7 @@ class Evaluator:
             gt_xyxy_abs[:, 1::2] *= orig_h
             for label, box in zip(gt_labels, gt_xyxy_abs):
                 self.ground_truths.setdefault(label.item(), []).append((image_idx, box))
+                self.per_class_gt[label.item()] += 1
             if out_cpu.numel() == 0:
                 continue
             boxes = DentalDDS.unletterbox_boxes(
@@ -55,17 +58,30 @@ class Evaluator:
             labels = out_cpu[:, 5].long()
             for b, s, l in zip(boxes, scores, labels):
                 self.detections.setdefault(l.item(), []).append((s.item(), image_idx, b))
+                self.per_class_preds[l.item()] += 1
 
-            # mean IoU against best GT in original coordinates
+            # mean IoU against matched GT in original coordinates (greedy match)
             if gt_xyxy_abs.numel() > 0:
-                pred_xyxy = boxes
-                ious = box_iou(pred_xyxy, gt_xyxy_abs)
-                self.total_iou += ious.max(dim=1)[0].mean().item()
-                self.iou_count += pred_xyxy.size(0)
+                ious = box_iou(boxes, gt_xyxy_abs)
+                if ious.numel() > 0:
+                    # Greedy assign highest-IoU pairs above threshold to avoid
+                    # counting thousands of unmatched low-score predictions.
+                    matched = []
+                    gt_used = set()
+                    for pred_idx in torch.argsort(scores, descending=True):
+                        iou_row = ious[pred_idx]
+                        max_iou, max_gt = iou_row.max(dim=0)
+                        if max_iou.item() >= self.iou_threshold and max_gt.item() not in gt_used:
+                            matched.append(max_iou.item())
+                            gt_used.add(max_gt.item())
+                    if matched:
+                        self.total_iou += sum(matched)
+                        self.iou_count += len(matched)
 
     def compute(self) -> Dict[str, float]:
         aps = []
         per_class_ap = {}
+        per_class_counts = {}
         for cls in range(config.NUM_CLASSES):
             dets = self.detections.get(cls, [])
             gts = self.ground_truths.get(cls, [])
@@ -100,11 +116,20 @@ class Evaluator:
             precision = tp / torch.clamp(tp + fp, min=1e-8)
             ap = compute_ap(recall, precision)
             per_class_ap[cls] = ap
+            per_class_counts[cls] = {
+                "gt": npos,
+                "pred": len(dets),
+                "tp": int(tp[-1].item()),
+                "fp": int(fp[-1].item()),
+                "final_recall": float(recall[-1].item()),
+                "final_precision": float(precision[-1].item()),
+            }
             aps.append(ap)
         mAP = float(torch.tensor(aps).mean().item()) if aps else 0.0
         mean_iou = self.total_iou / max(1, self.iou_count)
         return {
             "mAP": mAP,
             "per_class_ap": per_class_ap,
+            "per_class_counts": per_class_counts,
             "mean_iou": mean_iou,
         }
