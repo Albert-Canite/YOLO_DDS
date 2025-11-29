@@ -144,7 +144,11 @@ def main(args):
     config.CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
     train_loader, val_loader, train_dataset = create_dataloaders()
     freq = compute_class_frequencies(train_dataset.label_dir)
-    label_stats = gather_label_stats(train_dataset.label_dir)
+    label_stats = {
+        "train": gather_label_stats(config.LABELS_DIRS["train"]),
+        "valid": gather_label_stats(config.LABELS_DIRS["valid"]),
+        "test": gather_label_stats(config.LABELS_DIRS["test"]),
+    }
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     with open(config.LOG_DIR / "dataset_stats.json", "w", encoding="utf-8") as f:
         json.dump(label_stats, f, indent=2)
