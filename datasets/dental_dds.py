@@ -83,6 +83,47 @@ def compute_class_frequencies(label_dir: Path) -> List[int]:
     return counts
 
 
+def gather_label_stats(label_dir: Path) -> Dict[str, Any]:
+    """Scan annotations to compute validity and size stats for debugging."""
+    per_class = [0 for _ in range(config.NUM_CLASSES)]
+    per_image_counts = []
+    invalid_boxes = 0
+    for txt in sorted(label_dir.glob("*.txt")):
+        valid_boxes = 0
+        for line in txt.read_text(encoding="utf-8").splitlines():
+            parts = line.strip().split()
+            if len(parts) != 5:
+                continue
+            cls_id, cx, cy, w, h = parts
+            cls_idx = int(cls_id)
+            try:
+                cx_f, cy_f, w_f, h_f = map(float, (cx, cy, w, h))
+            except ValueError:
+                invalid_boxes += 1
+                continue
+            if not _is_valid_box(cx_f, cy_f, w_f, h_f):
+                invalid_boxes += 1
+                continue
+            if 0 <= cls_idx < config.NUM_CLASSES:
+                per_class[cls_idx] += 1
+            valid_boxes += 1
+        per_image_counts.append(valid_boxes)
+
+    total_boxes = sum(per_class)
+    return {
+        "label_dir": str(label_dir),
+        "num_images": len(per_image_counts),
+        "total_valid_boxes": total_boxes,
+        "invalid_boxes": invalid_boxes,
+        "per_class_counts": per_class,
+        "boxes_per_image": {
+            "min": min(per_image_counts) if per_image_counts else 0,
+            "max": max(per_image_counts) if per_image_counts else 0,
+            "mean": float(sum(per_image_counts) / len(per_image_counts)) if per_image_counts else 0.0,
+        },
+    }
+
+
 class DentalDDS(torch.utils.data.Dataset):
     def __init__(self, split: str = "train", augment: bool = True):
         super().__init__()
@@ -237,24 +278,50 @@ class DentalDDS(torch.utils.data.Dataset):
         if boxes.numel() == 0:
             return target
 
+        # Track which (anchor, cell) slots are already filled to avoid silently
+        # overwriting targets when multiple teeth land in the same grid cell.
+        filled = torch.zeros((num_anchors, grid_size, grid_size), dtype=torch.bool)
+
         for box, label in zip(boxes, labels):
             cx, cy, w, h = box.tolist()
             gx = cx * grid_size
             gy = cy * grid_size
             gi = int(gx)
             gj = int(gy)
+            # Clamp to valid cell index in case a box center falls exactly on the border.
+            gi = max(min(gi, grid_size - 1), 0)
+            gj = max(min(gj, grid_size - 1), 0)
             cell_x = gx - gi
             cell_y = gy - gj
-            best_anchor = self._select_best_anchor(w, h)
-            anchor_w, anchor_h = config.ANCHORS[best_anchor]
+
+            # Prefer the highest-IoU anchor that is still free for this cell.
+            anchor_wh = torch.tensor(config.ANCHORS, dtype=torch.float32) / config.INPUT_SIZE
+            box_wh = torch.tensor([w, h])
+            inter = torch.min(anchor_wh[:, 0], box_wh[0]) * torch.min(anchor_wh[:, 1], box_wh[1])
+            anchor_area = anchor_wh[:, 0] * anchor_wh[:, 1]
+            box_area = box_wh[0] * box_wh[1]
+            iou = inter / (anchor_area + box_area - inter + 1e-8)
+            best_anchors = torch.argsort(iou, descending=True)
+
+            chosen_anchor = None
+            for a_idx in best_anchors:
+                if not filled[a_idx, gj, gi]:
+                    chosen_anchor = int(a_idx)
+                    break
+            # If all anchors already filled for this cell, fall back to the top-IoU anchor.
+            if chosen_anchor is None:
+                chosen_anchor = int(best_anchors[0])
+
+            anchor_w, anchor_h = config.ANCHORS[chosen_anchor]
             tw = math.log((w * config.INPUT_SIZE) / anchor_w + 1e-8)
             th = math.log((h * config.INPUT_SIZE) / anchor_h + 1e-8)
-            target[best_anchor, gj, gi, 0] = cell_x
-            target[best_anchor, gj, gi, 1] = cell_y
-            target[best_anchor, gj, gi, 2] = tw
-            target[best_anchor, gj, gi, 3] = th
-            target[best_anchor, gj, gi, 4] = 1.0
-            target[best_anchor, gj, gi, 5 + label] = 1.0
+            target[chosen_anchor, gj, gi, 0] = cell_x
+            target[chosen_anchor, gj, gi, 1] = cell_y
+            target[chosen_anchor, gj, gi, 2] = tw
+            target[chosen_anchor, gj, gi, 3] = th
+            target[chosen_anchor, gj, gi, 4] = 1.0
+            target[chosen_anchor, gj, gi, 5 + label] = 1.0
+            filled[chosen_anchor, gj, gi] = True
         return target
 
     def _select_best_anchor(self, w: float, h: float) -> int:
