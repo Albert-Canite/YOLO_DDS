@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import torch
 from torch.utils.data import DataLoader
@@ -33,7 +34,13 @@ def load_checkpoint(model: YOLOTiny, checkpoint_path: Path, device):
     model.load_state_dict(ckpt["model_state"])
 
 
-def evaluate(split: str, checkpoint: Path, save_vis: Path = None, conf_threshold: float = None):
+def evaluate(
+    split: str,
+    checkpoint: Path,
+    save_vis: Path = None,
+    conf_threshold: float = None,
+    debug_dir: Optional[Path] = None,
+):
     device = torch.device(config.DEVICE if torch.cuda.is_available() else "cpu")
     dataset = DentalDDS(split=split, augment=False)
     loader = DataLoader(
@@ -46,7 +53,7 @@ def evaluate(split: str, checkpoint: Path, save_vis: Path = None, conf_threshold
     model = YOLOTiny().to(device)
     load_checkpoint(model, checkpoint, device)
     model.eval()
-    evaluator = Evaluator(iou_threshold=0.5)
+    evaluator = Evaluator(iou_threshold=0.5, debug_dir=debug_dir)
     vis_dir = None
     if save_vis is not None:
         vis_dir = Path(save_vis)
@@ -90,8 +97,15 @@ def main():
     parser.add_argument("--checkpoint", type=str, required=True, help="Path to model checkpoint")
     parser.add_argument("--save-vis", type=str, default=None, help="Optional directory to save predicted vs GT overlays")
     parser.add_argument("--conf", type=float, default=None, help="Optional confidence threshold for decoding (defaults to config.CONF_THRESHOLD)")
+    parser.add_argument("--debug-dir", type=str, default=None, help="Directory to dump per-image match debug JSONL")
     args = parser.parse_args()
-    evaluate(args.split, Path(args.checkpoint), save_vis=Path(args.save_vis) if args.save_vis else None, conf_threshold=args.conf)
+    evaluate(
+        args.split,
+        Path(args.checkpoint),
+        save_vis=Path(args.save_vis) if args.save_vis else None,
+        conf_threshold=args.conf,
+        debug_dir=Path(args.debug_dir) if args.debug_dir else config.EVAL_DEBUG_DIR,
+    )
 
 
 if __name__ == "__main__":

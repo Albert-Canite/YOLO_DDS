@@ -1,4 +1,6 @@
-from typing import List, Dict, Tuple
+import json
+from pathlib import Path
+from typing import List, Dict, Tuple, Any, Optional
 
 import torch
 from torchvision.ops import box_iou
@@ -19,8 +21,11 @@ def compute_ap(recall: torch.Tensor, precision: torch.Tensor) -> float:
 
 
 class Evaluator:
-    def __init__(self, iou_threshold: float = 0.5):
+    def __init__(self, iou_threshold: float = 0.5, debug_dir: Optional[Path] = None):
         self.iou_threshold = iou_threshold
+        self.debug_dir = Path(debug_dir) if debug_dir is not None else None
+        if self.debug_dir is not None:
+            self.debug_dir.mkdir(parents=True, exist_ok=True)
         self.reset()
 
     def reset(self):
@@ -31,6 +36,7 @@ class Evaluator:
         self.iou_count = 0
         self.per_class_gt = [0 for _ in range(config.NUM_CLASSES)]
         self.per_class_preds = [0 for _ in range(config.NUM_CLASSES)]
+        self.debug_records: List[Dict[str, Any]] = []
 
     def add_batch(self, outputs: List[torch.Tensor], metas: List[Dict]):
         for out, meta in zip(outputs, metas):
@@ -60,6 +66,7 @@ class Evaluator:
                 self.detections.setdefault(l.item(), []).append((s.item(), image_idx, b))
                 self.per_class_preds[l.item()] += 1
 
+            match_records = []
             # mean IoU against matched GT in original coordinates (greedy match)
             if gt_xyxy_abs.numel() > 0:
                 ious = box_iou(boxes, gt_xyxy_abs)
@@ -68,15 +75,49 @@ class Evaluator:
                     # counting thousands of unmatched low-score predictions.
                     matched = []
                     gt_used = set()
-                    for pred_idx in torch.argsort(scores, descending=True):
+                    pred_order = torch.argsort(scores, descending=True)
+                    for rank, pred_idx in enumerate(pred_order):
                         iou_row = ious[pred_idx]
                         max_iou, max_gt = iou_row.max(dim=0)
-                        if max_iou.item() >= self.iou_threshold and max_gt.item() not in gt_used:
+                        accepted = max_iou.item() >= self.iou_threshold and max_gt.item() not in gt_used
+                        if accepted:
                             matched.append(max_iou.item())
                             gt_used.add(max_gt.item())
+                        match_records.append(
+                            {
+                                "pred_index": int(pred_idx.item()),
+                                "rank": int(rank),
+                                "matched_gt": int(max_gt.item()),
+                                "iou": float(max_iou.item()),
+                                "accepted": bool(accepted),
+                            }
+                        )
                     if matched:
                         self.total_iou += sum(matched)
                         self.iou_count += len(matched)
+
+            if self.debug_dir is not None:
+                self.debug_records.append(
+                    {
+                        "image_id": meta["image_id"],
+                        "gt": [
+                            {
+                                "label": int(l.item()),
+                                "box_xyxy": [float(x) for x in box.tolist()],
+                            }
+                            for l, box in zip(gt_labels, gt_xyxy_abs)
+                        ],
+                        "pred": [
+                            {
+                                "label": int(l.item()),
+                                "score": float(s.item()),
+                                "box_xyxy": [float(x) for x in b.tolist()],
+                            }
+                            for l, s, b in zip(labels, scores, boxes)
+                        ],
+                        "matches": match_records if gt_xyxy_abs.numel() > 0 else [],
+                    }
+                )
 
     def compute(self) -> Dict[str, float]:
         aps = []
@@ -127,6 +168,12 @@ class Evaluator:
             aps.append(ap)
         mAP = float(torch.tensor(aps).mean().item()) if aps else 0.0
         mean_iou = self.total_iou / max(1, self.iou_count)
+        if self.debug_dir is not None:
+            debug_path = self.debug_dir / "eval_matches.jsonl"
+            with open(debug_path, "w", encoding="utf-8") as f:
+                for rec in self.debug_records:
+                    json.dump(rec, f, ensure_ascii=False)
+                    f.write("\n")
         return {
             "mAP": mAP,
             "per_class_ap": per_class_ap,

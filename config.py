@@ -74,6 +74,8 @@ CLASS_NAMES = [f"class_{i}" for i in range(NUM_CLASSES)]
 # Training
 CHECKPOINT_DIR = REPO_ROOT / "checkpoints"
 LOG_DIR = REPO_ROOT / "logs"
+# Where to dump detailed evaluation match diagnostics (JSONL)
+EVAL_DEBUG_DIR = REPO_ROOT / "debug_eval"
 DEVICE = "cuda"
 
 # Inference
