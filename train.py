@@ -2,7 +2,7 @@ import argparse
 import json
 import random
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import torch
 from torch.utils.data import DataLoader
@@ -53,6 +53,9 @@ def _mean_pos_per_image(targets: torch.Tensor) -> float:
 def train_one_epoch(model, criterion, optimizer, loader, device) -> Dict[str, float]:
     model.train()
     total_loss = 0.0
+    giou_loss = 0.0
+    obj_loss = 0.0
+    cls_loss = 0.0
     pos_meter = 0.0
     for images, targets, _ in loader:
         images = images.to(device)
@@ -64,9 +67,15 @@ def train_one_epoch(model, criterion, optimizer, loader, device) -> Dict[str, fl
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
+        giou_loss += loss_dict["giou"].item()
+        obj_loss += loss_dict["objectness"].item()
+        cls_loss += loss_dict["class"].item()
         pos_meter += _mean_pos_per_image(targets)
     return {
         "loss": total_loss / len(loader),
+        "giou": giou_loss / len(loader),
+        "objectness": obj_loss / len(loader),
+        "class": cls_loss / len(loader),
         "avg_pos_per_image": pos_meter / len(loader),
     }
 
@@ -74,8 +83,12 @@ def train_one_epoch(model, criterion, optimizer, loader, device) -> Dict[str, fl
 def validate(model, criterion, loader, device, evaluator: Evaluator):
     model.eval()
     total_loss = 0.0
+    giou_loss = 0.0
+    obj_loss = 0.0
+    cls_loss = 0.0
     pos_meter = 0.0
     debug_batch: Dict[str, Any] = {}
+    all_scores: List[float] = []
     with torch.no_grad():
         for batch_idx, (images, targets, metas) in enumerate(loader):
             images = images.to(device)
@@ -83,16 +96,29 @@ def validate(model, criterion, loader, device, evaluator: Evaluator):
             preds = model(images)
             loss_dict = criterion(preds, targets)
             total_loss += loss_dict["total"].item()
+            giou_loss += loss_dict["giou"].item()
+            obj_loss += loss_dict["objectness"].item()
+            cls_loss += loss_dict["class"].item()
             pos_meter += _mean_pos_per_image(targets)
             decoded = model.decode(preds, conf_threshold=config.VAL_CONF_THRESHOLD)
             evaluator.add_batch(decoded, metas)
+            for det in decoded:
+                if det.numel():
+                    all_scores.extend(det[:, 4].detach().cpu().tolist())
             # Capture first validation batch for deeper debugging
             if batch_idx == 0:
                 debug_batch = _collect_debug_batch(model, decoded, preds, metas)
-    avg_loss = total_loss / max(1, len(loader))
+    denom = max(1, len(loader))
+    avg_loss = total_loss / denom
     metrics = evaluator.compute()
     evaluator.reset()
-    return avg_loss, metrics, pos_meter / max(1, len(loader)), debug_batch
+    score_stats = _score_summary(all_scores)
+    loss_breakdown = {
+        "giou": giou_loss / denom,
+        "objectness": obj_loss / denom,
+        "class": cls_loss / denom,
+    }
+    return avg_loss, metrics, pos_meter / denom, debug_batch, score_stats, loss_breakdown
 
 
 def _collect_debug_batch(model, decoded, preds, metas) -> Dict[str, Any]:
@@ -130,6 +156,18 @@ def _collect_debug_batch(model, decoded, preds, metas) -> Dict[str, Any]:
     return {"images": batch_info}
 
 
+def _score_summary(scores: List[float]) -> Dict[str, float]:
+    if not scores:
+        return {"count": 0, "mean": 0.0, "median": 0.0, "p90": 0.0}
+    tensor = torch.tensor(scores)
+    return {
+        "count": int(tensor.numel()),
+        "mean": float(tensor.mean().item()),
+        "median": float(tensor.median().item()),
+        "p90": float(tensor.kthvalue(max(1, int(0.9 * tensor.numel()))).values.item()),
+    }
+
+
 def _save_debug(epoch: int, payload: Dict[str, Any]):
     config.LOG_DIR.mkdir(parents=True, exist_ok=True)
     out_path = config.LOG_DIR / f"debug_epoch_{epoch:03d}.json"
@@ -163,7 +201,9 @@ def main(args):
     for epoch in range(1, config.EPOCHS + 1):
         train_stats = train_one_epoch(model, criterion, optimizer, train_loader, device)
         evaluator = Evaluator(iou_threshold=0.5)
-        val_loss, metrics, val_pos_avg, debug_batch = validate(model, criterion, val_loader, device, evaluator)
+        val_loss, metrics, val_pos_avg, debug_batch, score_stats, val_loss_breakdown = validate(
+            model, criterion, val_loader, device, evaluator
+        )
         scheduler.step()
         map50 = metrics.get("mAP", 0.0)
         mean_iou = metrics.get("mean_iou", 0.0)
@@ -178,10 +218,17 @@ def main(args):
             {
                 "epoch": epoch,
                 "train_loss": train_stats["loss"],
+                "train_loss_breakdown": {
+                    "giou": train_stats["giou"],
+                    "objectness": train_stats["objectness"],
+                    "class": train_stats["class"],
+                },
                 "val_loss": val_loss,
+                "val_loss_breakdown": val_loss_breakdown,
                 "train_pos_per_image": train_stats["avg_pos_per_image"],
                 "val_pos_per_image": val_pos_avg,
                 "metrics": metrics,
+                "val_confidence": score_stats,
                 "label_stats": label_stats,
                 "val_debug_batch": debug_batch,
             },

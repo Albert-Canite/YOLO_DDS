@@ -86,10 +86,12 @@ def compute_class_frequencies(label_dir: Path) -> List[int]:
 def gather_label_stats(label_dir: Path) -> Dict[str, Any]:
     """Scan annotations to compute validity and size stats for debugging."""
     per_class = [0 for _ in range(config.NUM_CLASSES)]
+    per_class_images = [0 for _ in range(config.NUM_CLASSES)]
     per_image_counts = []
     invalid_boxes = 0
     for txt in sorted(label_dir.glob("*.txt")):
         valid_boxes = 0
+        seen_in_image = set()
         for line in txt.read_text(encoding="utf-8").splitlines():
             parts = line.strip().split()
             if len(parts) != 5:
@@ -106,16 +108,30 @@ def gather_label_stats(label_dir: Path) -> Dict[str, Any]:
                 continue
             if 0 <= cls_idx < config.NUM_CLASSES:
                 per_class[cls_idx] += 1
+                seen_in_image.add(cls_idx)
             valid_boxes += 1
+        for cls_idx in seen_in_image:
+            per_class_images[cls_idx] += 1
         per_image_counts.append(valid_boxes)
 
     total_boxes = sum(per_class)
+    nonzero_counts = [c for c in per_class if c > 0]
+    imbalance_ratio = (max(nonzero_counts) / min(nonzero_counts)) if len(nonzero_counts) > 1 else 1.0
+    presence_ratio = [
+        (count / len(per_image_counts)) if per_image_counts else 0.0 for count in per_class_images
+    ]
+    missing_classes = [idx for idx, count in enumerate(per_class) if count == 0]
     return {
         "label_dir": str(label_dir),
         "num_images": len(per_image_counts),
+        "images_with_no_boxes": int(sum(1 for c in per_image_counts if c == 0)),
         "total_valid_boxes": total_boxes,
         "invalid_boxes": invalid_boxes,
         "per_class_counts": per_class,
+        "per_class_image_freq": per_class_images,
+        "class_presence_ratio": presence_ratio,
+        "missing_classes": missing_classes,
+        "class_imbalance_ratio": imbalance_ratio,
         "boxes_per_image": {
             "min": min(per_image_counts) if per_image_counts else 0,
             "max": max(per_image_counts) if per_image_counts else 0,

@@ -179,3 +179,10 @@
   2. 若多数预测匹配到 GT 但 `accepted=false` 且 `iou>=0.5`，多半是类别错或被重复占用，需加强分类分支/调整类权重；
   3. 若匹配 IoU 普遍高且 accepted=true，但 `gt` 中长尾类极少或缺失，说明数据分布仍是主要瓶颈，mAP 难以再升，需要补充标注或对长尾类单独评估。
 
+## v19 debug（新增“数据 vs 模型”可溯源日志）
+- **新增数据健康度统计**：`dataset_stats.json` 现在额外记录每类在多少张图中出现、无标注图片数量，便于判断验证/测试是否缺失某些类别，定位“样本稀缺”是否是 mAP 偏低的根因。【F:datasets/dental_dds.py†L43-L77】
+- **显式暴露类别缺失与极端不平衡**：统计中增加 `missing_classes`、`class_presence_ratio` 与 `class_imbalance_ratio`，开局即可看到哪些类在当前划分完全缺席，以及频次跨度是否过大，避免把“长尾无样本”误判为模型能力不足。【F:datasets/dental_dds.py†L85-L102】
+- **训练/验证损失拆解**：每轮 `debug_epoch_xxx.json` 会落盘 GIoU/Objectness/Class 三个分支的均值损失，结合正样本数可判断是回归/分类倒下还是监督缺失导致模型不出框。【F:train.py†L34-L73】【F:train.py†L104-L135】
+- **预测置信度分布**：验证阶段汇总所有解码框的均值/中位数/90 分位置信度，写入调试日志，帮助判断“模型能力不足”（整体置信度低）还是“阈值过高导致被截断”。【F:train.py†L58-L88】【F:train.py†L104-L135】
+- **如何使用**：训练完查看最新 `logs/debug_epoch_*.json`，若 `val_confidence` 与 `per_class_counts` 皆显示模型几乎不给长尾类高分框，而 `dataset_stats.json` 又表明这些类在验证集中本就极少甚至缺失，则优先补充标注或重新划分；若数据覆盖正常但置信度普遍低，则需加强模型容量/训练策略（更长训练、focal loss、类权重等）。
+
