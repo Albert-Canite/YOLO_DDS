@@ -1,0 +1,59 @@
+{
+  "train": {
+    "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
+    "num_images": 558,
+    "total_valid_boxes": 5642,
+    "invalid_boxes": 0,
+    "per_class_counts": [
+      853,
+      172,
+      729,
+      69,
+      526,
+      3293
+    ],
+    "boxes_per_image": {
+      "min": 1,
+      "max": 25,
+      "mean": 10.11111111111111
+    }
+  },
+  "valid": {
+    "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\valid\\labels",
+    "num_images": 23,
+    "total_valid_boxes": 115,
+    "invalid_boxes": 0,
+    "per_class_counts": [
+      14,
+      4,
+      18,
+      3,
+      9,
+      67
+    ],
+    "boxes_per_image": {
+      "min": 1,
+      "max": 10,
+      "mean": 5.0
+    }
+  },
+  "test": {
+    "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\test\\labels",
+    "num_images": 23,
+    "total_valid_boxes": 102,
+    "invalid_boxes": 0,
+    "per_class_counts": [
+      26,
+      5,
+      12,
+      0,
+      5,
+      54
+    ],
+    "boxes_per_image": {
+      "min": 2,
+      "max": 9,
+      "mean": 4.434782608695652
+    }
+  }
+}

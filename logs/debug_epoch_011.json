@@ -1,0 +1,160 @@
+{
+  "epoch": 11,
+  "train_loss": 0.31660967086042674,
+  "val_loss": 1.1015494366486867,
+  "train_pos_per_image": 10.1,
+  "val_pos_per_image": 4.958333333333333,
+  "metrics": {
+    "mAP": 0.05160826817154884,
+    "per_class_ap": {
+      "0": 0.0535714291036129,
+      "1": 0.0,
+      "2": 0.152236670255661,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.10384152084589005
+    },
+    "per_class_counts": {
+      "0": {
+        "gt": 14,
+        "pred": 18,
+        "tp": 3,
+        "fp": 15,
+        "final_recall": 0.2142857164144516,
+        "final_precision": 0.1666666716337204
+      },
+      "2": {
+        "gt": 18,
+        "pred": 12,
+        "tp": 5,
+        "fp": 7,
+        "final_recall": 0.2777777910232544,
+        "final_precision": 0.4166666567325592
+      },
+      "5": {
+        "gt": 67,
+        "pred": 159,
+        "tp": 21,
+        "fp": 138,
+        "final_recall": 0.31343284249305725,
+        "final_precision": 0.1320754736661911
+      }
+    },
+    "mean_iou": 0.7291309796273708
+  },
+  "label_stats": {
+    "train": {
+      "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
+      "num_images": 558,
+      "total_valid_boxes": 5642,
+      "invalid_boxes": 0,
+      "per_class_counts": [
+        853,
+        172,
+        729,
+        69,
+        526,
+        3293
+      ],
+      "boxes_per_image": {
+        "min": 1,
+        "max": 25,
+        "mean": 10.11111111111111
+      }
+    },
+    "valid": {
+      "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\valid\\labels",
+      "num_images": 23,
+      "total_valid_boxes": 115,
+      "invalid_boxes": 0,
+      "per_class_counts": [
+        14,
+        4,
+        18,
+        3,
+        9,
+        67
+      ],
+      "boxes_per_image": {
+        "min": 1,
+        "max": 10,
+        "mean": 5.0
+      }
+    },
+    "test": {
+      "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\test\\labels",
+      "num_images": 23,
+      "total_valid_boxes": 102,
+      "invalid_boxes": 0,
+      "per_class_counts": [
+        26,
+        5,
+        12,
+        0,
+        5,
+        54
+      ],
+      "boxes_per_image": {
+        "min": 2,
+        "max": 9,
+        "mean": 4.434782608695652
+      }
+    }
+  },
+  "val_debug_batch": {
+    "images": [
+      {
+        "image_id": "105_jpg.rf.fc10e27e37bdacf62e154171aa518d6a",
+        "orig_size": [
+          640,
+          315
+        ],
+        "num_gt": 3,
+        "num_pred_val_thresh": 10,
+        "avg_obj_logit": -5.452600002288818,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.09140660613775253,
+        "gt_to_pred_iou_mean": 0.7670038342475891
+      },
+      {
+        "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
+        "orig_size": [
+          640,
+          311
+        ],
+        "num_gt": 7,
+        "num_pred_val_thresh": 2,
+        "avg_obj_logit": -5.509426116943359,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.20935936272144318,
+        "gt_to_pred_iou_mean": 0.6507793664932251
+      },
+      {
+        "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
+        "orig_size": [
+          640,
+          278
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 6,
+        "avg_obj_logit": -5.483419895172119,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.0659363865852356,
+        "gt_to_pred_iou_mean": 0.7366018295288086
+      },
+      {
+        "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
+        "orig_size": [
+          640,
+          312
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 4,
+        "avg_obj_logit": -5.442567825317383,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.055551353842020035,
+        "gt_to_pred_iou_mean": 0.669879138469696
+      }
+    ]
+  }
+}

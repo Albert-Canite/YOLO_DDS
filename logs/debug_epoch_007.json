@@ -1,0 +1,160 @@
+{
+  "epoch": 7,
+  "train_loss": 0.4474082687071392,
+  "val_loss": 0.991368571917216,
+  "train_pos_per_image": 10.10892857142857,
+  "val_pos_per_image": 4.958333333333333,
+  "metrics": {
+    "mAP": 0.03781387582421303,
+    "per_class_ap": {
+      "0": 0.09438775479793549,
+      "1": 0.0,
+      "2": 0.03703703731298447,
+      "3": 0.0,
+      "4": 0.0,
+      "5": 0.09545846283435822
+    },
+    "per_class_counts": {
+      "0": {
+        "gt": 14,
+        "pred": 21,
+        "tp": 5,
+        "fp": 16,
+        "final_recall": 0.3571428656578064,
+        "final_precision": 0.2380952388048172
+      },
+      "2": {
+        "gt": 18,
+        "pred": 7,
+        "tp": 2,
+        "fp": 5,
+        "final_recall": 0.1111111119389534,
+        "final_precision": 0.2857142984867096
+      },
+      "5": {
+        "gt": 67,
+        "pred": 124,
+        "tp": 21,
+        "fp": 103,
+        "final_recall": 0.31343284249305725,
+        "final_precision": 0.16935484111309052
+      }
+    },
+    "mean_iou": 0.7322581287088066
+  },
+  "label_stats": {
+    "train": {
+      "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
+      "num_images": 558,
+      "total_valid_boxes": 5642,
+      "invalid_boxes": 0,
+      "per_class_counts": [
+        853,
+        172,
+        729,
+        69,
+        526,
+        3293
+      ],
+      "boxes_per_image": {
+        "min": 1,
+        "max": 25,
+        "mean": 10.11111111111111
+      }
+    },
+    "valid": {
+      "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\valid\\labels",
+      "num_images": 23,
+      "total_valid_boxes": 115,
+      "invalid_boxes": 0,
+      "per_class_counts": [
+        14,
+        4,
+        18,
+        3,
+        9,
+        67
+      ],
+      "boxes_per_image": {
+        "min": 1,
+        "max": 10,
+        "mean": 5.0
+      }
+    },
+    "test": {
+      "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\test\\labels",
+      "num_images": 23,
+      "total_valid_boxes": 102,
+      "invalid_boxes": 0,
+      "per_class_counts": [
+        26,
+        5,
+        12,
+        0,
+        5,
+        54
+      ],
+      "boxes_per_image": {
+        "min": 2,
+        "max": 9,
+        "mean": 4.434782608695652
+      }
+    }
+  },
+  "val_debug_batch": {
+    "images": [
+      {
+        "image_id": "105_jpg.rf.fc10e27e37bdacf62e154171aa518d6a",
+        "orig_size": [
+          640,
+          315
+        ],
+        "num_gt": 3,
+        "num_pred_val_thresh": 10,
+        "avg_obj_logit": -5.223005771636963,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.1256062388420105,
+        "gt_to_pred_iou_mean": 0.8156865239143372
+      },
+      {
+        "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
+        "orig_size": [
+          640,
+          311
+        ],
+        "num_gt": 7,
+        "num_pred_val_thresh": 3,
+        "avg_obj_logit": -5.2836103439331055,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.23338966071605682,
+        "gt_to_pred_iou_mean": 0.6262477040290833
+      },
+      {
+        "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
+        "orig_size": [
+          640,
+          278
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 2,
+        "avg_obj_logit": -5.270164489746094,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.07994655519723892,
+        "gt_to_pred_iou_mean": 0.8248569965362549
+      },
+      {
+        "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
+        "orig_size": [
+          640,
+          312
+        ],
+        "num_gt": 2,
+        "num_pred_val_thresh": 1,
+        "avg_obj_logit": -5.218920707702637,
+        "num_pred_low_thresh": 30,
+        "pred_to_gt_iou_mean": 0.061819419264793396,
+        "gt_to_pred_iou_mean": 0.6526709794998169
+      }
+    ]
+  }
+}
