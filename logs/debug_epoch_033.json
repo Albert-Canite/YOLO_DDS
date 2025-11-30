@@ -1,54 +1,54 @@
 {
   "epoch": 33,
-  "train_loss": 0.13308434188365936,
-  "val_loss": 1.0621145168940227,
+  "train_loss": 0.12732407466641493,
+  "val_loss": 1.081766406695048,
   "train_pos_per_image": 10.125,
   "val_pos_per_image": 4.958333333333333,
   "metrics": {
-    "mAP": 0.1532989740371704,
+    "mAP": 0.14623355865478516,
     "per_class_ap": {
-      "0": 0.08241758495569229,
+      "0": 0.08829365670681,
       "1": 0.0,
-      "2": 0.6013071537017822,
+      "2": 0.5685184597969055,
       "3": 0.0,
       "4": 0.0555555559694767,
-      "5": 0.18051354587078094
+      "5": 0.1650337129831314
     },
     "per_class_counts": {
       "0": {
         "gt": 14,
-        "pred": 20,
-        "tp": 2,
-        "fp": 18,
-        "final_recall": 0.1428571492433548,
-        "final_precision": 0.10000000149011612
+        "pred": 27,
+        "tp": 3,
+        "fp": 24,
+        "final_recall": 0.2142857164144516,
+        "final_precision": 0.1111111119389534
       },
       "2": {
         "gt": 18,
-        "pred": 29,
-        "tp": 13,
-        "fp": 16,
-        "final_recall": 0.7222222089767456,
-        "final_precision": 0.4482758641242981
+        "pred": 32,
+        "tp": 12,
+        "fp": 20,
+        "final_recall": 0.6666666865348816,
+        "final_precision": 0.375
       },
       "4": {
         "gt": 9,
-        "pred": 10,
-        "tp": 2,
-        "fp": 8,
-        "final_recall": 0.2222222238779068,
-        "final_precision": 0.20000000298023224
+        "pred": 7,
+        "tp": 1,
+        "fp": 6,
+        "final_recall": 0.1111111119389534,
+        "final_precision": 0.1428571492433548
       },
       "5": {
         "gt": 67,
-        "pred": 296,
-        "tp": 49,
-        "fp": 247,
-        "final_recall": 0.7313432693481445,
-        "final_precision": 0.16554054617881775
+        "pred": 298,
+        "tp": 46,
+        "fp": 252,
+        "final_recall": 0.6865671873092651,
+        "final_precision": 0.15436241030693054
       }
     },
-    "mean_iou": 0.727325910652006
+    "mean_iou": 0.7272008778392405
   },
   "label_stats": {
     "train": {
@@ -118,11 +118,11 @@
           315
         ],
         "num_gt": 3,
-        "num_pred_val_thresh": 17,
-        "avg_obj_logit": -5.9708123207092285,
+        "num_pred_val_thresh": 12,
+        "avg_obj_logit": -5.994981288909912,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.09027091413736343,
-        "gt_to_pred_iou_mean": 0.7989301681518555
+        "pred_to_gt_iou_mean": 0.0679558739066124,
+        "gt_to_pred_iou_mean": 0.5596886277198792
       },
       {
         "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
@@ -131,11 +131,11 @@
           311
         ],
         "num_gt": 7,
-        "num_pred_val_thresh": 10,
-        "avg_obj_logit": -6.049975395202637,
+        "num_pred_val_thresh": 11,
+        "avg_obj_logit": -6.035772323608398,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.2775869369506836,
-        "gt_to_pred_iou_mean": 0.6812047958374023
+        "pred_to_gt_iou_mean": 0.24701476097106934,
+        "gt_to_pred_iou_mean": 0.6280194520950317
       },
       {
         "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
@@ -144,11 +144,11 @@
           278
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 14,
-        "avg_obj_logit": -5.967034339904785,
+        "num_pred_val_thresh": 20,
+        "avg_obj_logit": -6.005820274353027,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.06386055052280426,
-        "gt_to_pred_iou_mean": 0.7387826442718506
+        "pred_to_gt_iou_mean": 0.08074457943439484,
+        "gt_to_pred_iou_mean": 0.8169615864753723
       },
       {
         "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
@@ -157,11 +157,11 @@
           312
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 15,
-        "avg_obj_logit": -5.964532852172852,
+        "num_pred_val_thresh": 13,
+        "avg_obj_logit": -6.01392936706543,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.07803419232368469,
-        "gt_to_pred_iou_mean": 0.6762887835502625
+        "pred_to_gt_iou_mean": 0.07028716057538986,
+        "gt_to_pred_iou_mean": 0.6277860999107361
       }
     ]
   }

@@ -1,54 +1,54 @@
 {
   "epoch": 37,
-  "train_loss": 0.11207207829824516,
-  "val_loss": 1.0525523622830708,
+  "train_loss": 0.11097539035337312,
+  "val_loss": 1.0688108503818512,
   "train_pos_per_image": 10.1125,
   "val_pos_per_image": 4.958333333333333,
   "metrics": {
-    "mAP": 0.1510544866323471,
+    "mAP": 0.14921216666698456,
     "per_class_ap": {
-      "0": 0.05000000447034836,
+      "0": 0.08241758495569229,
       "1": 0.0,
-      "2": 0.6224989295005798,
+      "2": 0.5889351963996887,
       "3": 0.0,
-      "4": 0.0634920671582222,
-      "5": 0.17033590376377106
+      "4": 0.0555555559694767,
+      "5": 0.16836467385292053
     },
     "per_class_counts": {
       "0": {
         "gt": 14,
-        "pred": 16,
+        "pred": 22,
         "tp": 2,
-        "fp": 14,
+        "fp": 20,
         "final_recall": 0.1428571492433548,
-        "final_precision": 0.125
+        "final_precision": 0.09090909361839294
       },
       "2": {
         "gt": 18,
-        "pred": 30,
-        "tp": 14,
+        "pred": 28,
+        "tp": 12,
         "fp": 16,
-        "final_recall": 0.7777777910232544,
-        "final_precision": 0.46666666865348816
+        "final_recall": 0.6666666865348816,
+        "final_precision": 0.4285714328289032
       },
       "4": {
         "gt": 9,
-        "pred": 9,
-        "tp": 2,
-        "fp": 7,
-        "final_recall": 0.2222222238779068,
-        "final_precision": 0.2222222238779068
+        "pred": 7,
+        "tp": 1,
+        "fp": 6,
+        "final_recall": 0.1111111119389534,
+        "final_precision": 0.1428571492433548
       },
       "5": {
         "gt": 67,
-        "pred": 292,
+        "pred": 282,
         "tp": 47,
-        "fp": 245,
+        "fp": 235,
         "final_recall": 0.7014925479888916,
-        "final_precision": 0.1609589010477066
+        "final_precision": 0.1666666716337204
       }
     },
-    "mean_iou": 0.7293223647607697
+    "mean_iou": 0.7273169246272765
   },
   "label_stats": {
     "train": {
@@ -118,11 +118,11 @@
           315
         ],
         "num_gt": 3,
-        "num_pred_val_thresh": 15,
-        "avg_obj_logit": -5.9941887855529785,
+        "num_pred_val_thresh": 12,
+        "avg_obj_logit": -6.027255535125732,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.09192528575658798,
-        "gt_to_pred_iou_mean": 0.813163697719574
+        "pred_to_gt_iou_mean": 0.0688786432147026,
+        "gt_to_pred_iou_mean": 0.5807525515556335
       },
       {
         "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
@@ -131,11 +131,11 @@
           311
         ],
         "num_gt": 7,
-        "num_pred_val_thresh": 11,
-        "avg_obj_logit": -6.07076358795166,
+        "num_pred_val_thresh": 8,
+        "avg_obj_logit": -6.083683967590332,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.27499112486839294,
-        "gt_to_pred_iou_mean": 0.6839492917060852
+        "pred_to_gt_iou_mean": 0.25094059109687805,
+        "gt_to_pred_iou_mean": 0.6386256217956543
       },
       {
         "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
@@ -144,11 +144,11 @@
           278
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 18,
-        "avg_obj_logit": -5.975180625915527,
+        "num_pred_val_thresh": 17,
+        "avg_obj_logit": -6.02866792678833,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.06262922286987305,
-        "gt_to_pred_iou_mean": 0.7317816615104675
+        "pred_to_gt_iou_mean": 0.07921804487705231,
+        "gt_to_pred_iou_mean": 0.7968591451644897
       },
       {
         "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
@@ -158,10 +158,10 @@
         ],
         "num_gt": 2,
         "num_pred_val_thresh": 11,
-        "avg_obj_logit": -5.9802937507629395,
+        "avg_obj_logit": -6.057938575744629,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.07287445664405823,
-        "gt_to_pred_iou_mean": 0.6635358333587646
+        "pred_to_gt_iou_mean": 0.07051461189985275,
+        "gt_to_pred_iou_mean": 0.6275639533996582
       }
     ]
   }
