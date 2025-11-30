@@ -1,4 +1,6 @@
-from typing import List, Dict, Tuple
+import json
+from pathlib import Path
+from typing import List, Dict, Tuple, Any, Optional
 
 import torch
 from torchvision.ops import box_iou
@@ -19,8 +21,11 @@ def compute_ap(recall: torch.Tensor, precision: torch.Tensor) -> float:
 
 
 class Evaluator:
-    def __init__(self, iou_threshold: float = 0.5):
+    def __init__(self, iou_threshold: float = 0.5, debug_dir: Optional[Path] = None):
         self.iou_threshold = iou_threshold
+        self.debug_dir = Path(debug_dir) if debug_dir is not None else None
+        if self.debug_dir is not None:
+            self.debug_dir.mkdir(parents=True, exist_ok=True)
         self.reset()
 
     def reset(self):
@@ -29,6 +34,9 @@ class Evaluator:
         self.image_id_map: List[str] = []
         self.total_iou = 0.0
         self.iou_count = 0
+        self.per_class_gt = [0 for _ in range(config.NUM_CLASSES)]
+        self.per_class_preds = [0 for _ in range(config.NUM_CLASSES)]
+        self.debug_records: List[Dict[str, Any]] = []
 
     def add_batch(self, outputs: List[torch.Tensor], metas: List[Dict]):
         for out, meta in zip(outputs, metas):
@@ -43,6 +51,7 @@ class Evaluator:
             gt_xyxy_abs[:, 1::2] *= orig_h
             for label, box in zip(gt_labels, gt_xyxy_abs):
                 self.ground_truths.setdefault(label.item(), []).append((image_idx, box))
+                self.per_class_gt[label.item()] += 1
             if out_cpu.numel() == 0:
                 continue
             boxes = DentalDDS.unletterbox_boxes(
@@ -55,17 +64,65 @@ class Evaluator:
             labels = out_cpu[:, 5].long()
             for b, s, l in zip(boxes, scores, labels):
                 self.detections.setdefault(l.item(), []).append((s.item(), image_idx, b))
+                self.per_class_preds[l.item()] += 1
 
-            # mean IoU against best GT in original coordinates
+            match_records = []
+            # mean IoU against matched GT in original coordinates (greedy match)
             if gt_xyxy_abs.numel() > 0:
-                pred_xyxy = boxes
-                ious = box_iou(pred_xyxy, gt_xyxy_abs)
-                self.total_iou += ious.max(dim=1)[0].mean().item()
-                self.iou_count += pred_xyxy.size(0)
+                ious = box_iou(boxes, gt_xyxy_abs)
+                if ious.numel() > 0:
+                    # Greedy assign highest-IoU pairs above threshold to avoid
+                    # counting thousands of unmatched low-score predictions.
+                    matched = []
+                    gt_used = set()
+                    pred_order = torch.argsort(scores, descending=True)
+                    for rank, pred_idx in enumerate(pred_order):
+                        iou_row = ious[pred_idx]
+                        max_iou, max_gt = iou_row.max(dim=0)
+                        accepted = max_iou.item() >= self.iou_threshold and max_gt.item() not in gt_used
+                        if accepted:
+                            matched.append(max_iou.item())
+                            gt_used.add(max_gt.item())
+                        match_records.append(
+                            {
+                                "pred_index": int(pred_idx.item()),
+                                "rank": int(rank),
+                                "matched_gt": int(max_gt.item()),
+                                "iou": float(max_iou.item()),
+                                "accepted": bool(accepted),
+                            }
+                        )
+                    if matched:
+                        self.total_iou += sum(matched)
+                        self.iou_count += len(matched)
+
+            if self.debug_dir is not None:
+                self.debug_records.append(
+                    {
+                        "image_id": meta["image_id"],
+                        "gt": [
+                            {
+                                "label": int(l.item()),
+                                "box_xyxy": [float(x) for x in box.tolist()],
+                            }
+                            for l, box in zip(gt_labels, gt_xyxy_abs)
+                        ],
+                        "pred": [
+                            {
+                                "label": int(l.item()),
+                                "score": float(s.item()),
+                                "box_xyxy": [float(x) for x in b.tolist()],
+                            }
+                            for l, s, b in zip(labels, scores, boxes)
+                        ],
+                        "matches": match_records if gt_xyxy_abs.numel() > 0 else [],
+                    }
+                )
 
     def compute(self) -> Dict[str, float]:
         aps = []
         per_class_ap = {}
+        per_class_counts = {}
         for cls in range(config.NUM_CLASSES):
             dets = self.detections.get(cls, [])
             gts = self.ground_truths.get(cls, [])
@@ -100,11 +157,26 @@ class Evaluator:
             precision = tp / torch.clamp(tp + fp, min=1e-8)
             ap = compute_ap(recall, precision)
             per_class_ap[cls] = ap
+            per_class_counts[cls] = {
+                "gt": npos,
+                "pred": len(dets),
+                "tp": int(tp[-1].item()),
+                "fp": int(fp[-1].item()),
+                "final_recall": float(recall[-1].item()),
+                "final_precision": float(precision[-1].item()),
+            }
             aps.append(ap)
         mAP = float(torch.tensor(aps).mean().item()) if aps else 0.0
         mean_iou = self.total_iou / max(1, self.iou_count)
+        if self.debug_dir is not None:
+            debug_path = self.debug_dir / "eval_matches.jsonl"
+            with open(debug_path, "w", encoding="utf-8") as f:
+                for rec in self.debug_records:
+                    json.dump(rec, f, ensure_ascii=False)
+                    f.write("\n")
         return {
             "mAP": mAP,
             "per_class_ap": per_class_ap,
+            "per_class_counts": per_class_counts,
             "mean_iou": mean_iou,
         }
