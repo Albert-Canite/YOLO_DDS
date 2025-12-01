@@ -2,6 +2,7 @@
   "train": {
     "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
     "num_images": 558,
+    "images_with_no_boxes": 0,
     "total_valid_boxes": 5642,
     "invalid_boxes": 0,
     "per_class_counts": [
@@ -12,6 +13,24 @@
       526,
       3293
     ],
+    "per_class_image_freq": [
+      392,
+      104,
+      322,
+      58,
+      225,
+      550
+    ],
+    "class_presence_ratio": [
+      0.7025089605734767,
+      0.1863799283154122,
+      0.5770609318996416,
+      0.1039426523297491,
+      0.4032258064516129,
+      0.985663082437276
+    ],
+    "missing_classes": [],
+    "class_imbalance_ratio": 47.72463768115942,
     "boxes_per_image": {
       "min": 1,
       "max": 25,
@@ -21,6 +40,7 @@
   "valid": {
     "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\valid\\labels",
     "num_images": 23,
+    "images_with_no_boxes": 0,
     "total_valid_boxes": 115,
     "invalid_boxes": 0,
     "per_class_counts": [
@@ -31,6 +51,24 @@
       9,
       67
     ],
+    "per_class_image_freq": [
+      8,
+      3,
+      7,
+      3,
+      6,
+      22
+    ],
+    "class_presence_ratio": [
+      0.34782608695652173,
+      0.13043478260869565,
+      0.30434782608695654,
+      0.13043478260869565,
+      0.2608695652173913,
+      0.9565217391304348
+    ],
+    "missing_classes": [],
+    "class_imbalance_ratio": 22.333333333333332,
     "boxes_per_image": {
       "min": 1,
       "max": 10,
@@ -40,6 +78,7 @@
   "test": {
     "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\test\\labels",
     "num_images": 23,
+    "images_with_no_boxes": 0,
     "total_valid_boxes": 102,
     "invalid_boxes": 0,
     "per_class_counts": [
@@ -50,6 +89,26 @@
       5,
       54
     ],
+    "per_class_image_freq": [
+      14,
+      2,
+      7,
+      0,
+      4,
+      23
+    ],
+    "class_presence_ratio": [
+      0.6086956521739131,
+      0.08695652173913043,
+      0.30434782608695654,
+      0.0,
+      0.17391304347826086,
+      1.0
+    ],
+    "missing_classes": [
+      3
+    ],
+    "class_imbalance_ratio": 10.8,
     "boxes_per_image": {
       "min": 2,
       "max": 9,

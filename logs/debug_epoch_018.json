@@ -1,35 +1,45 @@
 {
   "epoch": 18,
-  "train_loss": 0.21957907538328852,
-  "val_loss": 1.0990620056788127,
+  "train_loss": 0.23018343576363154,
+  "train_loss_breakdown": {
+    "giou": 0.1751322886773518,
+    "objectness": 0.03251992452091405,
+    "class": 0.022531223090897712
+  },
+  "val_loss": 1.0832276841004689,
+  "val_loss_breakdown": {
+    "giou": 0.2749730795621872,
+    "objectness": 0.018306034617125988,
+    "class": 0.7899485677480698
+  },
   "train_pos_per_image": 10.1,
   "val_pos_per_image": 4.958333333333333,
   "metrics": {
-    "mAP": 0.12085463851690292,
+    "mAP": 0.10861382633447647,
     "per_class_ap": {
-      "0": 0.0535714328289032,
+      "0": 0.0406746044754982,
       "1": 0.0,
-      "2": 0.45497971773147583,
+      "2": 0.44305557012557983,
       "3": 0.0,
       "4": 0.0555555559694767,
-      "5": 0.1610211431980133
+      "5": 0.11239724606275558
     },
     "per_class_counts": {
       "0": {
         "gt": 14,
-        "pred": 11,
-        "tp": 2,
-        "fp": 9,
-        "final_recall": 0.1428571492433548,
-        "final_precision": 0.1818181872367859
+        "pred": 25,
+        "tp": 3,
+        "fp": 22,
+        "final_recall": 0.2142857164144516,
+        "final_precision": 0.11999999731779099
       },
       "2": {
         "gt": 18,
-        "pred": 26,
+        "pred": 19,
         "tp": 10,
-        "fp": 16,
+        "fp": 9,
         "final_recall": 0.5555555820465088,
-        "final_precision": 0.38461539149284363
+        "final_precision": 0.5263158082962036
       },
       "4": {
         "gt": 9,
@@ -41,19 +51,26 @@
       },
       "5": {
         "gt": 67,
-        "pred": 311,
-        "tp": 48,
-        "fp": 263,
-        "final_recall": 0.7164179086685181,
-        "final_precision": 0.15434083342552185
+        "pred": 242,
+        "tp": 38,
+        "fp": 204,
+        "final_recall": 0.5671641826629639,
+        "final_precision": 0.1570248007774353
       }
     },
-    "mean_iou": 0.7200508705083875
+    "mean_iou": 0.7475168176417081
+  },
+  "val_confidence": {
+    "count": 289,
+    "mean": 0.3133336007595062,
+    "median": 0.2898825705051422,
+    "p90": 0.4556930661201477
   },
   "label_stats": {
     "train": {
       "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
       "num_images": 558,
+      "images_with_no_boxes": 0,
       "total_valid_boxes": 5642,
       "invalid_boxes": 0,
       "per_class_counts": [
@@ -64,6 +81,24 @@
         526,
         3293
       ],
+      "per_class_image_freq": [
+        392,
+        104,
+        322,
+        58,
+        225,
+        550
+      ],
+      "class_presence_ratio": [
+        0.7025089605734767,
+        0.1863799283154122,
+        0.5770609318996416,
+        0.1039426523297491,
+        0.4032258064516129,
+        0.985663082437276
+      ],
+      "missing_classes": [],
+      "class_imbalance_ratio": 47.72463768115942,
       "boxes_per_image": {
         "min": 1,
         "max": 25,
@@ -73,6 +108,7 @@
     "valid": {
       "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\valid\\labels",
       "num_images": 23,
+      "images_with_no_boxes": 0,
       "total_valid_boxes": 115,
       "invalid_boxes": 0,
       "per_class_counts": [
@@ -83,6 +119,24 @@
         9,
         67
       ],
+      "per_class_image_freq": [
+        8,
+        3,
+        7,
+        3,
+        6,
+        22
+      ],
+      "class_presence_ratio": [
+        0.34782608695652173,
+        0.13043478260869565,
+        0.30434782608695654,
+        0.13043478260869565,
+        0.2608695652173913,
+        0.9565217391304348
+      ],
+      "missing_classes": [],
+      "class_imbalance_ratio": 22.333333333333332,
       "boxes_per_image": {
         "min": 1,
         "max": 10,
@@ -92,6 +146,7 @@
     "test": {
       "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\test\\labels",
       "num_images": 23,
+      "images_with_no_boxes": 0,
       "total_valid_boxes": 102,
       "invalid_boxes": 0,
       "per_class_counts": [
@@ -102,6 +157,26 @@
         5,
         54
       ],
+      "per_class_image_freq": [
+        14,
+        2,
+        7,
+        0,
+        4,
+        23
+      ],
+      "class_presence_ratio": [
+        0.6086956521739131,
+        0.08695652173913043,
+        0.30434782608695654,
+        0.0,
+        0.17391304347826086,
+        1.0
+      ],
+      "missing_classes": [
+        3
+      ],
+      "class_imbalance_ratio": 10.8,
       "boxes_per_image": {
         "min": 2,
         "max": 9,
@@ -118,11 +193,11 @@
           315
         ],
         "num_gt": 3,
-        "num_pred_val_thresh": 13,
-        "avg_obj_logit": -5.668245792388916,
+        "num_pred_val_thresh": 10,
+        "avg_obj_logit": -5.785282135009766,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.09153144061565399,
-        "gt_to_pred_iou_mean": 0.82320636510849
+        "pred_to_gt_iou_mean": 0.08753469586372375,
+        "gt_to_pred_iou_mean": 0.8013081550598145
       },
       {
         "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
@@ -132,10 +207,10 @@
         ],
         "num_gt": 7,
         "num_pred_val_thresh": 9,
-        "avg_obj_logit": -5.736138820648193,
+        "avg_obj_logit": -5.862894535064697,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.24416522681713104,
-        "gt_to_pred_iou_mean": 0.6528291702270508
+        "pred_to_gt_iou_mean": 0.2714332044124603,
+        "gt_to_pred_iou_mean": 0.6187499165534973
       },
       {
         "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
@@ -144,11 +219,11 @@
           278
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 18,
-        "avg_obj_logit": -5.6796793937683105,
+        "num_pred_val_thresh": 5,
+        "avg_obj_logit": -5.800529479980469,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.07851187139749527,
-        "gt_to_pred_iou_mean": 0.7643861770629883
+        "pred_to_gt_iou_mean": 0.08256842941045761,
+        "gt_to_pred_iou_mean": 0.839560866355896
       },
       {
         "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
@@ -157,11 +232,11 @@
           312
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 11,
-        "avg_obj_logit": -5.706190586090088,
+        "num_pred_val_thresh": 7,
+        "avg_obj_logit": -5.773921966552734,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.08805158734321594,
-        "gt_to_pred_iou_mean": 0.6705072522163391
+        "pred_to_gt_iou_mean": 0.0767856016755104,
+        "gt_to_pred_iou_mean": 0.7636008262634277
       }
     ]
   }

@@ -1,59 +1,76 @@
 {
   "epoch": 21,
-  "train_loss": 0.20341557913592884,
-  "val_loss": 1.0783065557479858,
+  "train_loss": 0.20315611245376722,
+  "train_loss_breakdown": {
+    "giou": 0.15369329511054924,
+    "objectness": 0.03165491654404572,
+    "class": 0.017807900067418815
+  },
+  "val_loss": 1.0065669814745586,
+  "val_loss_breakdown": {
+    "giou": 0.2887219885985057,
+    "objectness": 0.01787405243764321,
+    "class": 0.6999709407488505
+  },
   "train_pos_per_image": 10.135714285714286,
   "val_pos_per_image": 4.958333333333333,
   "metrics": {
-    "mAP": 0.14507833123207092,
+    "mAP": 0.12376102060079575,
     "per_class_ap": {
-      "0": 0.0833333358168602,
+      "0": 0.07576531171798706,
       "1": 0.0,
-      "2": 0.5202564001083374,
+      "2": 0.49082890152931213,
       "3": 0.0,
-      "4": 0.1111111119389534,
-      "5": 0.15576915442943573
+      "4": 0.0555555559694767,
+      "5": 0.12041636556386948
     },
     "per_class_counts": {
       "0": {
         "gt": 14,
-        "pred": 14,
-        "tp": 2,
-        "fp": 12,
-        "final_recall": 0.1428571492433548,
-        "final_precision": 0.1428571492433548
+        "pred": 34,
+        "tp": 4,
+        "fp": 30,
+        "final_recall": 0.2857142984867096,
+        "final_precision": 0.11764705926179886
       },
       "2": {
         "gt": 18,
-        "pred": 26,
-        "tp": 12,
-        "fp": 14,
-        "final_recall": 0.6666666865348816,
-        "final_precision": 0.4615384638309479
+        "pred": 22,
+        "tp": 11,
+        "fp": 11,
+        "final_recall": 0.6111111044883728,
+        "final_precision": 0.5
       },
       "4": {
         "gt": 9,
-        "pred": 3,
+        "pred": 6,
         "tp": 1,
-        "fp": 2,
+        "fp": 5,
         "final_recall": 0.1111111119389534,
-        "final_precision": 0.3333333432674408
+        "final_precision": 0.1666666716337204
       },
       "5": {
         "gt": 67,
-        "pred": 262,
-        "tp": 43,
-        "fp": 219,
-        "final_recall": 0.641791045665741,
-        "final_precision": 0.16412213444709778
+        "pred": 292,
+        "tp": 40,
+        "fp": 252,
+        "final_recall": 0.5970149040222168,
+        "final_precision": 0.13698630034923553
       }
     },
-    "mean_iou": 0.6999193411607009
+    "mean_iou": 0.7282860249280929
+  },
+  "val_confidence": {
+    "count": 354,
+    "mean": 0.32938599586486816,
+    "median": 0.3031027913093567,
+    "p90": 0.4943225383758545
   },
   "label_stats": {
     "train": {
       "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\train\\labels",
       "num_images": 558,
+      "images_with_no_boxes": 0,
       "total_valid_boxes": 5642,
       "invalid_boxes": 0,
       "per_class_counts": [
@@ -64,6 +81,24 @@
         526,
         3293
       ],
+      "per_class_image_freq": [
+        392,
+        104,
+        322,
+        58,
+        225,
+        550
+      ],
+      "class_presence_ratio": [
+        0.7025089605734767,
+        0.1863799283154122,
+        0.5770609318996416,
+        0.1039426523297491,
+        0.4032258064516129,
+        0.985663082437276
+      ],
+      "missing_classes": [],
+      "class_imbalance_ratio": 47.72463768115942,
       "boxes_per_image": {
         "min": 1,
         "max": 25,
@@ -73,6 +108,7 @@
     "valid": {
       "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\valid\\labels",
       "num_images": 23,
+      "images_with_no_boxes": 0,
       "total_valid_boxes": 115,
       "invalid_boxes": 0,
       "per_class_counts": [
@@ -83,6 +119,24 @@
         9,
         67
       ],
+      "per_class_image_freq": [
+        8,
+        3,
+        7,
+        3,
+        6,
+        22
+      ],
+      "class_presence_ratio": [
+        0.34782608695652173,
+        0.13043478260869565,
+        0.30434782608695654,
+        0.13043478260869565,
+        0.2608695652173913,
+        0.9565217391304348
+      ],
+      "missing_classes": [],
+      "class_imbalance_ratio": 22.333333333333332,
       "boxes_per_image": {
         "min": 1,
         "max": 10,
@@ -92,6 +146,7 @@
     "test": {
       "label_dir": "C:\\Users\\54544\\OneDrive\\Documents\\GitHub\\YOLO_DDS\\Dental OPG XRAY Dataset\\Augmented_Data\\test\\labels",
       "num_images": 23,
+      "images_with_no_boxes": 0,
       "total_valid_boxes": 102,
       "invalid_boxes": 0,
       "per_class_counts": [
@@ -102,6 +157,26 @@
         5,
         54
       ],
+      "per_class_image_freq": [
+        14,
+        2,
+        7,
+        0,
+        4,
+        23
+      ],
+      "class_presence_ratio": [
+        0.6086956521739131,
+        0.08695652173913043,
+        0.30434782608695654,
+        0.0,
+        0.17391304347826086,
+        1.0
+      ],
+      "missing_classes": [
+        3
+      ],
+      "class_imbalance_ratio": 10.8,
       "boxes_per_image": {
         "min": 2,
         "max": 9,
@@ -118,11 +193,11 @@
           315
         ],
         "num_gt": 3,
-        "num_pred_val_thresh": 13,
-        "avg_obj_logit": -5.845524311065674,
+        "num_pred_val_thresh": 14,
+        "avg_obj_logit": -5.855578899383545,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.06331111490726471,
-        "gt_to_pred_iou_mean": 0.5827890038490295
+        "pred_to_gt_iou_mean": 0.08337534219026566,
+        "gt_to_pred_iou_mean": 0.8011260628700256
       },
       {
         "image_id": "122_jpg.rf.7668820b59771bafa96b99ba5411b121",
@@ -131,11 +206,11 @@
           311
         ],
         "num_gt": 7,
-        "num_pred_val_thresh": 5,
-        "avg_obj_logit": -5.916772842407227,
+        "num_pred_val_thresh": 11,
+        "avg_obj_logit": -5.925116062164307,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.2461327761411667,
-        "gt_to_pred_iou_mean": 0.6543951630592346
+        "pred_to_gt_iou_mean": 0.2906549274921417,
+        "gt_to_pred_iou_mean": 0.6563563346862793
       },
       {
         "image_id": "130_jpg.rf.f26cfd39dad7baef3d90c6f98aaa23ab",
@@ -144,11 +219,11 @@
           278
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 19,
-        "avg_obj_logit": -5.8627166748046875,
+        "num_pred_val_thresh": 16,
+        "avg_obj_logit": -5.862060070037842,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.07804326713085175,
-        "gt_to_pred_iou_mean": 0.7878015041351318
+        "pred_to_gt_iou_mean": 0.07417188584804535,
+        "gt_to_pred_iou_mean": 0.8121532201766968
       },
       {
         "image_id": "141_jpg.rf.a7d2f07e8fbc3051dd3f306d89babea4",
@@ -157,11 +232,11 @@
           312
         ],
         "num_gt": 2,
-        "num_pred_val_thresh": 10,
-        "avg_obj_logit": -5.890677452087402,
+        "num_pred_val_thresh": 12,
+        "avg_obj_logit": -5.8501973152160645,
         "num_pred_low_thresh": 30,
-        "pred_to_gt_iou_mean": 0.053051095455884933,
-        "gt_to_pred_iou_mean": 0.5605254173278809
+        "pred_to_gt_iou_mean": 0.07957890629768372,
+        "gt_to_pred_iou_mean": 0.7008143067359924
       }
     ]
   }
