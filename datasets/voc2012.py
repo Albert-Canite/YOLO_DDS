@@ -247,7 +247,7 @@ class PascalVOC2012(torch.utils.data.Dataset):
         if boxes_xyxy.numel() == 0:
             return boxes_xyxy
         if input_size is None:
-            input_size = config.INPUT_SIZE
+            input_size = config_voc2012.INPUT_SIZE
         pad_left, pad_top, _, _ = pad
         orig_w, orig_h = orig_size
         boxes = boxes_xyxy.clone()
@@ -258,9 +258,11 @@ class PascalVOC2012(torch.utils.data.Dataset):
         return boxes
 
     def build_yolo_target(self, boxes: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-        num_anchors = len(config.ANCHORS)
-        grid_size = config.INPUT_SIZE // config.STRIDE
-        target = torch.zeros((num_anchors, grid_size, grid_size, 5 + config.NUM_CLASSES), dtype=torch.float32)
+        num_anchors = len(config_voc2012.ANCHORS)
+        grid_size = config_voc2012.INPUT_SIZE // config_voc2012.STRIDE
+        target = torch.zeros(
+            (num_anchors, grid_size, grid_size, 5 + config_voc2012.NUM_CLASSES), dtype=torch.float32
+        )
         if boxes.numel() == 0:
             return target
 
@@ -274,7 +276,7 @@ class PascalVOC2012(torch.utils.data.Dataset):
             cell_x = gx - gi
             cell_y = gy - gj
 
-            anchor_wh = torch.tensor(config.ANCHORS, dtype=torch.float32) / config.INPUT_SIZE
+            anchor_wh = torch.tensor(config_voc2012.ANCHORS, dtype=torch.float32) / config_voc2012.INPUT_SIZE
             box_wh = torch.tensor([w, h])
             inter = torch.min(anchor_wh[:, 0], box_wh[0]) * torch.min(anchor_wh[:, 1], box_wh[1])
             anchor_area = anchor_wh[:, 0] * anchor_wh[:, 1]
@@ -290,9 +292,9 @@ class PascalVOC2012(torch.utils.data.Dataset):
             if chosen_anchor is None:
                 chosen_anchor = int(best_anchors[0])
 
-            anchor_w, anchor_h = config.ANCHORS[chosen_anchor]
-            tw = math.log((w * config.INPUT_SIZE) / anchor_w + 1e-8)
-            th = math.log((h * config.INPUT_SIZE) / anchor_h + 1e-8)
+            anchor_w, anchor_h = config_voc2012.ANCHORS[chosen_anchor]
+            tw = math.log((w * config_voc2012.INPUT_SIZE) / anchor_w + 1e-8)
+            th = math.log((h * config_voc2012.INPUT_SIZE) / anchor_h + 1e-8)
             target[chosen_anchor, gj, gi, 0] = cell_x
             target[chosen_anchor, gj, gi, 1] = cell_y
             target[chosen_anchor, gj, gi, 2] = tw
