@@ -1,6 +1,7 @@
 import argparse
 import json
 import random
+from pathlib import Path
 from typing import Dict, Any, List
 
 import torch
@@ -26,6 +27,38 @@ def _apply_voc_config():
     for attr in dir(config_voc2012):
         if attr.isupper():
             setattr(config, attr, getattr(config_voc2012, attr))
+
+
+def _verify_voc_structure():
+    """Validate that the VOC2012 directories and split lists are reachable.
+
+    A common failure mode on Windows is double-clicking the script without a
+    console; if the dataset path is wrong the process can exit silently. This
+    check provides a clear error so users know to launch with
+    ``python train_voc.py`` and confirm the ``VOC_ROOT`` location.
+    """
+
+    missing: List[str] = []
+    required_dirs = {
+        "VOC_ROOT": config_voc2012.VOC_ROOT,
+        "VOC2012_train_val": config_voc2012.TRAINVAL_DIR,
+        "VOC2012_test": config_voc2012.TEST_DIR,
+    }
+    for name, path in required_dirs.items():
+        if not Path(path).exists():
+            missing.append(f"{name} -> {path}")
+
+    for split, list_path in config_voc2012.SPLIT_FILES.items():
+        if not list_path.exists():
+            missing.append(f"split file for '{split}' -> {list_path}")
+
+    if missing:
+        msg = (
+            "VOC2012 dataset not found. Please set VOC_ROOT to your dataset root "
+            "(e.g., E:/VOC) and run via 'python train_voc.py'. Missing: "
+            + "; ".join(missing)
+        )
+        raise FileNotFoundError(msg)
 
 
 def create_dataloaders():
@@ -182,6 +215,7 @@ def _save_debug(epoch: int, payload: Dict[str, Any]):
 
 def main(args):
     _apply_voc_config()
+    _verify_voc_structure()
     set_seed(config.SEED)
     device = torch.device(config.DEVICE if torch.cuda.is_available() else "cpu")
     config.CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
