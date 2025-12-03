@@ -66,17 +66,33 @@ def _decoded_to_records(decoded: List[torch.Tensor], metas) -> List[Dict[str, An
 
 def evaluate_split(model, loader, device, conf_threshold: float):
     model.eval()
-    evaluator = Evaluator(iou_threshold=0.5, unletterbox_fn=PascalVOC2012.unletterbox_boxes)
+    has_gt = getattr(loader.dataset, "has_annotations", True)
+    evaluator = None
+    if has_gt:
+        evaluator = Evaluator(iou_threshold=0.5, unletterbox_fn=PascalVOC2012.unletterbox_boxes)
+
     all_preds: List[Dict[str, Any]] = []
     with torch.no_grad():
         for images, _, metas in loader:
             images = images.to(device)
             preds = model(images)
             decoded_batch = model.decode(preds, conf_threshold=conf_threshold)
-            evaluator.add_batch(decoded_batch, metas)
+            if evaluator is not None:
+                evaluator.add_batch(decoded_batch, metas)
             all_preds.extend(_decoded_to_records(decoded_batch, metas))
-    metrics = evaluator.compute()
-    evaluator.reset()
+
+    metrics: Dict[str, Any]
+    if evaluator is not None:
+        metrics = evaluator.compute()
+        evaluator.reset()
+    else:
+        metrics = {
+            "mAP": None,
+            "per_class_ap": {},
+            "per_class_counts": {},
+            "mean_iou": None,
+            "note": "No ground-truth annotations for this split; metrics skipped.",
+        }
     return metrics, all_preds
 
 
@@ -91,7 +107,12 @@ def main():
     parser = argparse.ArgumentParser(description="Evaluate VOC2012 checkpoint and export predictions")
     parser.add_argument("--checkpoint", type=Path, required=True, help="Path to voc checkpoint (voc_best.pt)")
     parser.add_argument("--split", type=str, default="val", choices=["train", "val", "test"], help="Dataset split")
-    parser.add_argument("--conf", type=float, default=config_voc2012.CONF_THRESHOLD, help="Confidence threshold")
+    parser.add_argument(
+        "--conf",
+        type=float,
+        default=config_voc2012.VAL_CONF_THRESHOLD,
+        help="Confidence threshold (lower by default for evaluation)",
+    )
     parser.add_argument("--save-json", type=Path, default=config_voc2012.LOG_DIR / "voc_predictions.json")
     args = parser.parse_args()
 
