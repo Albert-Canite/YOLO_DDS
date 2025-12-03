@@ -66,7 +66,7 @@ def _decoded_to_records(decoded: List[torch.Tensor], metas) -> List[Dict[str, An
 
 def evaluate_split(model, loader, device, conf_threshold: float):
     model.eval()
-    evaluator = Evaluator(iou_threshold=0.5)
+    evaluator = Evaluator(iou_threshold=0.5, unletterbox_fn=PascalVOC2012.unletterbox_boxes)
     all_preds: List[Dict[str, Any]] = []
     with torch.no_grad():
         for images, _, metas in loader:

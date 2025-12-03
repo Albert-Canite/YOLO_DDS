@@ -186,3 +186,11 @@
 - **预测置信度分布**：验证阶段汇总所有解码框的均值/中位数/90 分位置信度，写入调试日志，帮助判断“模型能力不足”（整体置信度低）还是“阈值过高导致被截断”。【F:train.py†L58-L88】【F:train.py†L104-L135】
 - **如何使用**：训练完查看最新 `logs/debug_epoch_*.json`，若 `val_confidence` 与 `per_class_counts` 皆显示模型几乎不给长尾类高分框，而 `dataset_stats.json` 又表明这些类在验证集中本就极少甚至缺失，则优先补充标注或重新划分；若数据覆盖正常但置信度普遍低，则需加强模型容量/训练策略（更长训练、focal loss、类权重等）。
 
+## VOC 评估为 0 的排查与结论（最新）
+- **现象**：在切换到 VOC2012 训练/验证时，前几个 epoch 的 `val_mAP@0.5`、`val_meanIoU` 始终为 0。
+- **定位出的根因**：评估器默认使用 DDS 的 `unletterbox_boxes`，其 letterbox 形状与 VOC 不同，导致预测框在还原到原图坐标时缩放/偏移错误，IoU 几乎全为 0，进而令 mAP 也为 0。【F:utils/metrics.py†L23-L75】【F:datasets/voc2012.py†L239-L258】
+- **修复**：让 `Evaluator` 接受数据集自定义的反 letterbox 函数，并在 VOC 训练/验证时传入 `PascalVOC2012.unletterbox_boxes`，保证预测框在正确坐标系下参与匹配和指标计算。【F:utils/metrics.py†L23-L75】【F:train_voc.py†L238-L244】【F:datasets/voc2012.py†L239-L258】
+- **结论/建议**：
+  - 继续跑旧版（未传入 VOC 反 letterbox）的代码，指标会一直为 0，需停止并切换到修复后的脚本；
+  - 确保 `train_voc.py`/`eval_voc.py` 使用最新代码，或在自定义流程里显式传入 `unletterbox_fn=PascalVOC2012.unletterbox_boxes`，再重新评估指标。
+

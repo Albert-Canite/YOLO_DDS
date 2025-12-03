@@ -238,7 +238,7 @@ def main(args):
     best_map = 0.0
     for epoch in range(1, config.EPOCHS + 1):
         train_stats = train_one_epoch(model, criterion, optimizer, train_loader, device)
-        evaluator = Evaluator(iou_threshold=0.5)
+        evaluator = Evaluator(iou_threshold=0.5, unletterbox_fn=PascalVOC2012.unletterbox_boxes)
         val_loss, metrics, val_pos_avg, debug_batch, score_stats, val_loss_breakdown = validate(
             model, criterion, val_loader, device, evaluator
         )

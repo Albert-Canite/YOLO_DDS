@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List, Dict, Tuple, Any, Optional
+from typing import List, Dict, Tuple, Any, Optional, Callable
 
 import torch
 from torchvision.ops import box_iou
@@ -21,11 +21,18 @@ def compute_ap(recall: torch.Tensor, precision: torch.Tensor) -> float:
 
 
 class Evaluator:
-    def __init__(self, iou_threshold: float = 0.5, debug_dir: Optional[Path] = None):
+    def __init__(
+        self,
+        iou_threshold: float = 0.5,
+        debug_dir: Optional[Path] = None,
+        unletterbox_fn: Optional[Callable[..., torch.Tensor]] = None,
+    ):
         self.iou_threshold = iou_threshold
         self.debug_dir = Path(debug_dir) if debug_dir is not None else None
         if self.debug_dir is not None:
             self.debug_dir.mkdir(parents=True, exist_ok=True)
+        # Allow dataset-specific reverse letterboxing; default to DDS helper.
+        self.unletterbox_fn = unletterbox_fn or DentalDDS.unletterbox_boxes
         self.reset()
 
     def reset(self):
@@ -54,11 +61,12 @@ class Evaluator:
                 self.per_class_gt[label.item()] += 1
             if out_cpu.numel() == 0:
                 continue
-            boxes = DentalDDS.unletterbox_boxes(
+            boxes = self.unletterbox_fn(
                 out_cpu[:, :4],
                 scale=meta["letterbox_scale"],
                 pad=meta["letterbox_pad"],
                 orig_size=meta["orig_size"],
+                input_size=config.INPUT_SIZE,
             )
             scores = out_cpu[:, 4]
             labels = out_cpu[:, 5].long()
