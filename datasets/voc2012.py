@@ -139,17 +139,44 @@ class PascalVOC2012(torch.utils.data.Dataset):
         self.ann_dir = config_voc2012.ANNOTATION_DIRS[self.split]
         self.split_file = config_voc2012.SPLIT_FILES[self.split]
 
-        if not self.images_dir.exists() or not self.ann_dir.exists():
+        if not self.images_dir.exists():
             raise FileNotFoundError(
-                f"VOC2012 data folders not found. Expected '{self.images_dir}' and '{self.ann_dir}'. "
+                f"VOC2012 images folder not found. Expected '{self.images_dir}'. "
                 "Set VOC_ROOT or update config_voc2012 paths to point to your dataset."
             )
-        if not self.split_file.exists():
+
+        self.require_annotations = self.split != "test"
+        self.has_annotations = self.ann_dir.exists()
+        if self.require_annotations and not self.has_annotations:
             raise FileNotFoundError(
-                f"Split file '{self.split_file}' missing. Ensure ImageSets/Main/{{train,val,test}}.txt are present."
+                f"VOC2012 annotation folder not found. Expected '{self.ann_dir}'. "
+                "Set VOC_ROOT or update config_voc2012 paths to point to your dataset."
+            )
+        if not self.require_annotations and not self.has_annotations:
+            print(
+                f"[WARN] Annotations for split '{self.split}' not found at {self.ann_dir}. "
+                "Proceeding without ground-truth boxes (inference-only)."
             )
 
-        self.ids = load_split(self.split_file)
+        if self.split_file.exists():
+            self.ids = load_split(self.split_file)
+        elif self.split == "test":
+            # Allow missing test.txt: fall back to all images in JPEGImages
+            image_stems = {p.stem for p in self.images_dir.glob("*.jpg")}
+            image_stems.update({p.stem for p in self.images_dir.glob("*.png")})
+            if not image_stems:
+                raise FileNotFoundError(
+                    f"No images found under {self.images_dir}; cannot build test split list."
+                )
+            self.ids = sorted(image_stems)
+            print(
+                f"[WARN] Split file '{self.split_file}' missing; using all {len(self.ids)} images in {self.images_dir}"
+            )
+        else:
+            raise FileNotFoundError(
+                f"Split file '{self.split_file}' missing. Ensure ImageSets/Main/{{train,val}}.txt are present."
+            )
+
         self.input_size = config_voc2012.INPUT_SIZE
         self.augment = augment
         self.to_tensor = transforms.ToTensor()
@@ -168,7 +195,18 @@ class PascalVOC2012(torch.utils.data.Dataset):
 
     def _load_annotation(self, image_id: str) -> Annotation:
         xml_path = self.ann_dir / f"{image_id}.xml"
+        if not self.has_annotations:
+            return Annotation(
+                boxes=torch.zeros((0, 4), dtype=torch.float32),
+                labels=torch.zeros((0,), dtype=torch.int64),
+            )
         if not xml_path.exists():
+            if self.split == "test":
+                print(f"[WARN] Missing annotation for test image {image_id} at {xml_path}; skipping GT.")
+                return Annotation(
+                    boxes=torch.zeros((0, 4), dtype=torch.float32),
+                    labels=torch.zeros((0,), dtype=torch.int64),
+                )
             raise FileNotFoundError(f"Annotation {xml_path} not found")
         return _parse_annotation(xml_path)
 

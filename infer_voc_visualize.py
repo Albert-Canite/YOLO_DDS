@@ -86,7 +86,12 @@ def main():
     parser.add_argument("--checkpoint", type=Path, required=True, help="Path to VOC checkpoint")
     parser.add_argument("--split", type=str, default="val", choices=["train", "val", "test"], help="Dataset split")
     parser.add_argument("--num", type=int, default=10, help="Number of images to visualize")
-    parser.add_argument("--conf", type=float, default=config_voc2012.CONF_THRESHOLD, help="Confidence threshold for decoding")
+    parser.add_argument(
+        "--conf",
+        type=float,
+        default=config_voc2012.VAL_CONF_THRESHOLD,
+        help="Confidence threshold for decoding (lower default to surface weak predictions)",
+    )
     parser.add_argument("--output", type=Path, default=Path("inference_outputs/voc"), help="Directory to save visualizations")
     args = parser.parse_args()
 
